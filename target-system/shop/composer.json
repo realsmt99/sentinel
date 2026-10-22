@@ -1,0 +1,14 @@
+{
+    "name": "acme/shop",
+    "description": "Acme Coffee Roasters storefront",
+    "type": "project",
+    "license": "proprietary",
+    "require": {
+        "php": "^8.3.30"
+    },
+    "config": {
+        "platform": {
+            "php": "8.3.30"
+        }
+    }
+}

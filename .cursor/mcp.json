@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "aiven": {
+      "type": "http",
+      "url": "https://mcp.aiven.live/mcp?allow_secrets=true"
+    },
+    "keenable": {
+      "type": "http",
+      "url": "https://api.keenable.ai/mcp"
+    }
+  }
+}

@@ -1,0 +1,14 @@
+{
+    "name": "acme/admin-panel",
+    "description": "Acme Coffee Roasters internal admin panel",
+    "type": "project",
+    "license": "proprietary",
+    "require": {
+        "php": "^8.4.20"
+    },
+    "config": {
+        "platform": {
+            "php": "8.4.20"
+        }
+    }
+}

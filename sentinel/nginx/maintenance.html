@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<meta name="sentinel-page" content="maintenance">
+<meta http-equiv="refresh" content="15">
+<title>Scheduled security maintenance - we'll be right back</title>
+<style>
+  :root {
+    --canvas: #F7F6F3;
+    --surface: #FFFFFF;
+    --ink: #2F3437;
+    --ink-strong: #111111;
+    --muted: #787774;
+    --line: #EAEAEA;
+    --serif: ui-serif, "New York", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+    --sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body { margin: 0; background: var(--canvas); color: var(--ink); font: 16px/1.6 var(--sans); -webkit-font-smoothing: antialiased; display: flex; flex-direction: column; }
+  main { flex: 1; display: grid; place-items: center; padding: 64px 24px; }
+  .panel { width: 100%; max-width: 560px; animation: rise 600ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+
+  .mark { width: 56px; height: 56px; border-radius: 12px; background: #EDF3EC; border: 1px solid var(--line); display: grid; place-items: center; margin-bottom: 32px; }
+  .badge { display: inline-flex; align-items: center; gap: 8px; background: #FBF3DB; color: #956400; border-radius: 9999px; padding: 5px 12px; font: 600 11px/1 var(--sans); letter-spacing: 0.08em; text-transform: uppercase; }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: #956400; animation: pulse 1.6s ease-in-out infinite; }
+
+  h1 { font-family: var(--serif); font-weight: 400; font-size: clamp(40px, 7vw, 56px); line-height: 1.08; letter-spacing: -0.035em; color: var(--ink-strong); margin: 22px 0 16px; }
+  p.lede { font-size: 18px; color: var(--muted); margin: 0 0 40px; max-width: 46ch; }
+
+  dl { margin: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+  .row { display: flex; justify-content: space-between; gap: 24px; padding: 16px 22px; }
+  .row + .row { border-top: 1px solid var(--line); }
+  dt { color: var(--muted); font-size: 14px; }
+  dd { margin: 0; font: 13px/1.6 var(--mono); color: var(--ink); text-align: right; }
+
+  footer { padding: 24px; text-align: center; font: 12px/1 var(--mono); letter-spacing: 0.04em; color: var(--muted); }
+
+  @keyframes rise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
+  @media (prefers-reduced-motion: reduce) { .panel, .dot { animation: none; } }
+</style>
+</head>
+<body>
+<main>
+  <div class="panel">
+    <div class="mark" aria-hidden="true">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#346538" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 3l7.5 3v5.5c0 4.6-3.1 8.4-7.5 9.5-4.4-1.1-7.5-4.9-7.5-9.5V6z"/>
+        <path d="M8.75 12.25l2.25 2.25 4.25-4.5"/>
+      </svg>
+    </div>
+
+    <span class="badge"><span class="dot"></span>Scheduled security maintenance</span>
+    <h1>We'll be right back.</h1>
+    <p class="lede">We are applying a security update to this service. There is nothing you need to do on your side.</p>
+
+    <dl>
+      <div class="row"><dt>Status</dt><dd>Security update in progress</dd></div>
+      <div class="row"><dt>Expected duration</dt><dd>A few minutes</dd></div>
+      <div class="row"><dt>This page</dt><dd>Reloads every 15 seconds</dd></div>
+    </dl>
+  </div>
+</main>
+<footer>Protected by Sentinel</footer>
+</body>
+</html>

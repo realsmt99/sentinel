@@ -1,0 +1,14 @@
+.env
+.env.*
+!.env.example
+
+node_modules/
+.next/
+__pycache__/
+*.pyc
+.venv/
+
+# Kill-switch flag files written at runtime and mounted into nginx
+runtime/
+
+.DS_Store

@@ -1,0 +1,46 @@
+{
+  "title": "PHP2Shell: unauthenticated remote code execution in PHP (CVE-2026-109618, CVE-2026-109619)",
+  "summary": "Two memory-safety flaws in the PHP runtime (OOM state corruption and stale global state) allow unauthenticated remote code execution on every PHP installation that serves web requests. The only complete fix is upgrading to PHP 8.5.12, 8.4.27, 8.3.36 or 8.2.35; branches 8.1 and older have no official release.",
+  "cvss": 9.2,
+  "cvss_version": "4.0",
+  "exploitation_reported": true,
+  "exploitation_evidence": "Amazon Threat Intelligence observed an exploitation attempt on Oct 17; Tenable says broadly exploited in the wild",
+  "high_risk_runtime_modes": ["apache2handler"],
+  "runtime_mode_notes": "Apache mod_php (apache2handler) carries the highest risk: a demonstrated exploit triggers from an unauthenticated request before any application code runs. PHP-FPM is exploitable via application-level code paths.",
+  "fixed_versions": {
+    "8.2": {"version": "8.2.35", "source_url": "https://www.php.net/archive/2026.php"},
+    "8.3": {"version": "8.3.36", "source_url": "https://www.php.net/archive/2026.php"},
+    "8.4": {"version": "8.4.27", "source_url": "https://www.php.net/archive/2026.php"},
+    "8.5": {"version": "8.5.12", "source_url": "https://www.php.net/archive/2026.php"}
+  },
+  "min_supported_branch": "8.2",
+  "unsupported_branches": ["7.4", "8.0", "8.1"],
+  "conflicts": ["CISA (Oct 21): not observed as of publication"],
+  "sources": [
+    {
+      "url": "https://www.php.net/archive/2026.php",
+      "title": "PHP: News Archive - 2026 (security advisory, 21 Oct 2026)",
+      "claim": "PHP 8.5.12, 8.4.27, 8.3.36 and 8.2.35 fix CVE-2026-109618 and CVE-2026-109619 (CVSS v4.0 9.2); risk is highest for mod_php; 7.4, 8.0 and 8.1 only received minimal source backports."
+    },
+    {
+      "url": "https://www.tenable.com/blog/php2shell-cve-2026-109618-cve-2026-109619-frequently-asked-questions-about-critical-php-remote",
+      "title": "Tenable: PHP2Shell (CVE-2026-109618, CVE-2026-109619) FAQ",
+      "claim": "Amazon Threat Intelligence observed an exploitation attempt on its MadPot honeypots on Oct 17 and says PHP2Shell is now broadly exploited in the wild; 7.4 through 8.1 get no official release."
+    },
+    {
+      "url": "https://www.cisa.gov/news-events/alerts/2026/10/21/critical-vulnerabilities-php-require-immediate-patching",
+      "title": "CISA: Critical Vulnerabilities in PHP Require Immediate Patching",
+      "claim": "Upgrade to 8.5.12, 8.4.27, 8.3.36 or 8.2.35; CISA had not observed exploitation as of publication (Oct 21)."
+    },
+    {
+      "url": "https://thephp.foundation/blog/2026/10/21/todays-php-security-release-and-how-were-strengthening-php-security/",
+      "title": "The PHP Foundation: Today's PHP Security Release, and How We're Strengthening PHP Security",
+      "claim": "The flaws score CVSS 9.2; with mod_php an unauthenticated request triggers the bug before application code runs, and PHP-FPM is also vulnerable."
+    },
+    {
+      "url": "https://www.bleepingcomputer.com/news/security/php-ships-emergency-patches-for-critical-php2shell-flaws/",
+      "title": "BleepingComputer: PHP ships emergency patches for critical PHP2Shell flaws",
+      "claim": "PHP shipped emergency patches for the critical PHP2Shell flaws."
+    }
+  ]
+}
