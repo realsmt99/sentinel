@@ -1,5 +1,5 @@
 # Guard
-
+demo : https://www.youtube.com/watch?v=l42jKfeXURg
 **Autonomous SecOps agent team, built on Aiven for PostgreSQL and the OpenAI Agents SDK.**
 
 Guard plugs into a running system, reads the CVE feed, and decides per service what a new vulnerability actually means: dismiss it, open a fix PR while the service keeps earning, or take it offline now. Built for the Aiven "Future Founders: Data-Centric Agents" hackathon.
