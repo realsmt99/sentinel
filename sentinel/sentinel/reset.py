@@ -25,19 +25,24 @@ def _github_cleanup() -> dict[str, Any]:
     return result
 
 
+# Both resets do the slow Docker and GitHub steps first and clear the tables last, so the dashboard only
+# shows the fresh state (and enables the next action) once the job is really over.
+
+
 def reset_demo(clear_intel: bool = False) -> dict[str, Any]:
     """Disconnect: archive the run to history/, then back to the connect form with the vulnerable shop."""
     started = time.monotonic()
+    target = docker_ops.reset_target()
+    github = _github_cleanup()
     archived = history.archive_current("disconnected")
     db.reset_tables(clear_services=True, clear_intel=clear_intel)
-    target = docker_ops.reset_target()
     return {
         "archived": archived,
         "cleared": ["cve_events", "incidents", "agent_runs", "agent_log", "chat_messages", "services"]
         + (["threat_intel"] if clear_intel else []),
         "threat_intel_kept": not clear_intel,
         "target": target,
-        "github": _github_cleanup(),
+        "github": github,
         "seconds": round(time.monotonic() - started, 1),
     }
 
@@ -45,10 +50,10 @@ def reset_demo(clear_intel: bool = False) -> dict[str, Any]:
 def new_run() -> dict[str, Any]:
     """New run: archive the run, reset the feed and the target, keep the project connected."""
     started = time.monotonic()
-    archived = history.archive_current("new run")
-    db.reset_tables(clear_services=False)
     target = docker_ops.reset_target()
     github = _github_cleanup()
+    archived = history.archive_current("new run")
+    db.reset_tables(clear_services=False)
     history.start_run()
     narrate.new_run([s["name"] for s in db.load_services()])
     return {"archived": archived, "target": target, "github": github, "seconds": round(time.monotonic() - started, 1)}

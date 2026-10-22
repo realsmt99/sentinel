@@ -227,6 +227,15 @@ function Conversation({ state, site, controls, nowMs, onRun, connectWith, readOn
               </div>
             </div>
           )}
+          {!readOnly && connected && state.chat.length === 0 && (
+            <div className="flex animate-rise gap-3.5">
+              <GuardAvatar />
+              <p className="min-w-0 flex-1 pt-0.5 text-[15px] leading-[1.7] text-ink-soft">
+                <span className="mb-1 block text-sm font-semibold text-ink">Guard</span>
+                I&apos;m connected to {state.services.map((s) => s.name).join(", ")}. Replay the CVE feed when you&apos;re ready.
+              </p>
+            </div>
+          )}
           {state.chat.map((message) => (
             <Message
               key={message.id}
@@ -258,7 +267,12 @@ function Composer({ ctx, controls, onRun, activity }: { ctx: SceneContext; contr
   const { view } = ctx;
   const replayReady = view.feed.total === 0;
   const restoreReady = view.steps.restore === "active";
-  const hint = activity
+  const notice = [controls.reset, controls.newRun, controls.replay, ctx.controls.restore, controls.connect]
+    .map((c) => c.message)
+    .find((m) => m !== null);
+  const hint = notice
+    ? notice.text
+    : activity
     ? "Guard is working. Every step appears above as it happens."
     : replayReady
       ? "Next: replay the real NVD feed of 21 October 2026."
@@ -270,7 +284,14 @@ function Composer({ ctx, controls, onRun, activity }: { ctx: SceneContext; contr
   return (
     <div className="border-t border-line bg-bone-100 px-6 py-4">
       <div className="mx-auto flex max-w-3xl flex-wrap items-center justify-between gap-3 rounded-2xl border border-line bg-white px-4 py-3 shadow-[0_1px_2px_rgba(17,17,17,0.03)]">
-        <span className="text-sm text-mute">{hint}</span>
+        <span
+          className={`text-sm ${
+            notice?.tone === "danger" ? "text-pale-red-ink" : notice?.tone === "warning" ? "text-pale-yellow-ink" : "text-mute"
+          }`}
+          role={notice ? "status" : undefined}
+        >
+          {hint}
+        </span>
         <span className="flex flex-wrap gap-2">
           {replayReady && <ActionButtonView control={controls.replay} onRun={onRun} compact theme="light" />}
           {restoreReady && <ActionButtonView control={ctx.controls.restore} onRun={onRun} compact theme="light" />}

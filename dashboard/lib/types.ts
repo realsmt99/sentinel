@@ -114,6 +114,10 @@ export interface ChatCard {
   type: "services" | "feed" | "funnel" | "intel" | "scores" | "site" | "pr" | "next" | string;
   service?: string;
   url?: string;
+  /** Website state when the message was written (site cards). */
+  state?: "online" | "offline";
+  version?: string | null;
+  status?: number | null;
 }
 
 export interface ChatMessage {

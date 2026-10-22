@@ -51,16 +51,19 @@ const WAIT_TIMEOUT_MS: Record<ActionName, number> = {
   connect: 30_000,
   replay: 20_000,
   restore: 90_000,
-  reset: 30_000,
-  newrun: 30_000,
+  // Both reset the target containers and the GitHub repo before the state changes.
+  reset: 120_000,
+  newrun: 120_000,
 };
+/** Tolerance between the browser clock (click time) and the database clock (run start). */
+const CLOCK_SKEW_MS = 5_000;
 const MESSAGE_TTL_MS = 10_000;
 
 export function actionKey(name: ActionName, service?: string | null): string {
   return service ? `${name}:${service}` : name;
 }
 
-function effectVisible(name: ActionName, service: string | null, state: DashboardState): boolean {
+function effectVisible(name: ActionName, service: string | null, state: DashboardState, clickedAt: number): boolean {
   switch (name) {
     case "connect":
       return state.services.length > 0;
@@ -76,7 +79,7 @@ function effectVisible(name: ActionName, service: string | null, state: Dashboar
         state.services.every((s) => s.status === "HEALTHY")
       );
     case "newrun":
-      return state.funnel.total === 0 && state.incidents.length === 0 && state.services.length > 0;
+      return state.run !== null && Date.parse(state.run.started_at) > clickedAt - CLOCK_SKEW_MS && state.chat.length > 0;
   }
 }
 
@@ -109,7 +112,7 @@ export function resolveActionStatus(
     case "failed":
       return age < MESSAGE_TTL_MS ? { kind: "failed", message: phase.message } : { kind: "idle" };
     case "waiting": {
-      if (effectVisible(button.name, button.service, state)) return { kind: "idle" };
+      if (effectVisible(button.name, button.service, state, phase.at)) return { kind: "idle" };
       const timeout = WAIT_TIMEOUT_MS[button.name];
       if (age < timeout) return { kind: "waiting" };
       if (age < timeout + MESSAGE_TTL_MS) {

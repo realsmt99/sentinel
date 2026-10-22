@@ -30,6 +30,17 @@ LANE_FIELDS = ("status", "last_tool", "started_at", "ended_at", "output", "error
 _PY_LEVELS = {"info": logging.INFO, "success": logging.INFO, "warn": logging.WARNING, "error": logging.ERROR}
 
 
+# Routers drop idle TCP connections silently; without keepalives the next query on such a connection
+# waits forever and blocks the job worker. Probes every 20 s keep the path open and detect dead peers.
+CONNECT_KWARGS: dict[str, Any] = {
+    "connect_timeout": 10,
+    "keepalives": 1,
+    "keepalives_idle": 20,
+    "keepalives_interval": 5,
+    "keepalives_count": 3,
+}
+
+
 class DatabaseNotConfigured(RuntimeError):
     pass
 
@@ -55,10 +66,11 @@ def pool() -> ConnectionPool:
                     min_size=1,
                     max_size=6,
                     timeout=15,
-                    max_idle=300,
+                    max_idle=60,
                     name="sentinel",
                     check=ConnectionPool.check_connection,
-                    kwargs={"row_factory": dict_row, "application_name": "sentinel", "connect_timeout": 10},
+                    kwargs={"row_factory": dict_row, "application_name": "sentinel", **CONNECT_KWARGS,
+                            "options": "-c statement_timeout=60000"},
                     open=True,
                 )
     return _pool

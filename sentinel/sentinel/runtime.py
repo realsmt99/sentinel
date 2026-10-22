@@ -122,7 +122,7 @@ class Runtime:
                 self._stop.wait(5)
                 continue
             try:
-                with psycopg.connect(url, autocommit=True, connect_timeout=10, application_name="sentinel-listen") as conn:
+                with psycopg.connect(url, autocommit=True, application_name="sentinel-listen", **db.CONNECT_KWARGS) as conn:
                     conn.execute("LISTEN cve_batch")
                     conn.execute("LISTEN feed_done")
                     self.listener_alive.set()

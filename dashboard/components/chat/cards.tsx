@@ -32,7 +32,7 @@ export function ChatCardView({ card: c, ctx, readOnly }: CardProps) {
     case "scores":
       return <SceneVisual sceneKey="score" ctx={ctx} />;
     case "site":
-      return <SiteCard ctx={ctx} readOnly={readOnly} />;
+      return <SiteCard card={c} ctx={ctx} readOnly={readOnly} />;
     case "pr":
       return <PrCard ctx={ctx} service={c.service ?? null} url={c.url ?? null} />;
     case "next":
@@ -91,18 +91,22 @@ export function NotificationCard({ alert }: { alert: PhoneAlert }) {
   );
 }
 
-function SiteCard({ ctx, readOnly }: { ctx: SceneContext; readOnly: boolean }) {
-  const urgent = ctx.view.alerts.filter((a) => a.urgent);
+function SiteCard({ card: c, ctx, readOnly }: { card: ChatCard; ctx: SceneContext; readOnly: boolean }) {
   const site = ctx.view.site;
+  const online = c.state ? c.state === "online" : site.state === "online";
+  const urgent = online ? [] : ctx.view.alerts.filter((a) => a.urgent);
+  const version = c.version ?? (online ? site.version : null);
   return (
     <div className="space-y-3">
       {readOnly ? (
         <div className={`${card} flex items-center justify-between gap-4 px-5 py-4`}>
           <div>
-            <div className="text-sm font-medium text-ink">{site.service} at the end of this run</div>
-            <div className="text-xs text-mute">{site.version ? `PHP ${site.version}` : "version unknown"}</div>
+            <div className="text-sm font-medium text-ink">{site.service}</div>
+            <div className="text-xs text-mute">
+              {online ? (version ? `Serving on PHP ${version}` : "Serving") : `Maintenance page${c.status ? `, answers ${c.status}` : ""}`}
+            </div>
           </div>
-          <Tag tone={site.state === "online" ? "success" : "danger"}>{site.state === "online" ? "Online" : "Stopped by Guard"}</Tag>
+          <Tag tone={online ? "success" : "danger"}>{online ? "Online" : "Stopped by Guard"}</Tag>
         </div>
       ) : (
         <WebsitePreview site={site} check={ctx.site} />

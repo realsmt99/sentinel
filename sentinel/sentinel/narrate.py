@@ -132,9 +132,9 @@ def contained(service: str, offline: bool, alert_sent: bool, edge_status: int | 
         say(f"Done: {service} is stopped and visitors see the maintenance page"
             + (f" (the site now answers {edge_status})" if edge_status else "") + ". "
             + ("I sent an urgent alert to your phone." if alert_sent else "The phone alert was skipped."),
-            card={"type": "site"})
+            card={"type": "site", "state": "offline", "status": edge_status})
     else:
-        say(f"I could not take {service} offline. Please check it.", card={"type": "site"})
+        say(f"I could not take {service} offline. Please check it.", card={"type": "site", "state": "online"})
 
 
 def fix_ready(service: str, pr_url: str | None, target: str | None, reason: str | None, alerted: bool) -> None:
@@ -164,13 +164,13 @@ def merged(service: str, number: int, by: str | None) -> None:
 
 
 def restore_failed(service: str, error: str) -> None:
-    say(f"I could not deploy the patched {service}: {error}", card={"type": "site"})
+    say(f"I could not deploy the patched {service}: {error}", card={"type": "site", "state": "offline"})
 
 
 def solved(service: str, version: str | None, seconds: float | None) -> None:
     took = f" Solved {round(seconds / 60, 1)} minutes after the CVE arrived." if seconds else ""
     say(f"{service} is back online on PHP {version or 'the patched version'} and the maintenance page is gone.{took}",
-        card={"type": "site"})
+        card={"type": "site", "state": "online", "version": version})
     try:
         run = history.current_run()
         if run and "solved" not in run["title"]:
