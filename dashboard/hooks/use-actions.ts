@@ -8,7 +8,7 @@ export function useActions(onAccepted: () => void) {
   const [phases, setPhases] = useState<Record<string, ActionPhase>>({});
 
   const run = useCallback(
-    async (name: ActionName, service?: string | null, payload?: Record<string, string>) => {
+    async (name: ActionName, service?: string | null, payload?: Record<string, string | boolean>) => {
       const key = actionKey(name, service);
       setPhases((prev) => ({ ...prev, [key]: { kind: "sending", at: Date.now() } }));
 

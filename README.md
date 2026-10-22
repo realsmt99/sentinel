@@ -4,6 +4,32 @@ demo : https://www.youtube.com/watch?v=l42jKfeXURg
 
 Guard plugs into a running system, reads the CVE feed, and decides per service what a new vulnerability actually means: dismiss it, open a fix PR while the service keeps earning, or take it offline now. Built for the Aiven "Future Founders: Data-Centric Agents" hackathon.
 
+## How it works, in 5 screens
+
+You press one button. Everything else is automatic. In the run below, it took under 2 minutes from Connect to open fix PRs.
+
+**1. Connect.** Fill in (or just check) your Aiven database, GitHub repo, Docker project, website and phone topic. Each field can be tested live. Press **Connect and start**.
+
+![Connect form](docs/screenshots/1-connect.png)
+
+**2. Guard works on its own.** It reads 544 real CVEs, finds the 2 that hit your PHP, researches them, and scores each service. The public shop scores 92/100, so Guard puts it behind a maintenance page and alerts your phone. The admin panel (67) keeps running.
+
+![Website taken offline](docs/screenshots/2-offline.png)
+
+**3. Fix PRs are opened.** One per affected service, linked on the page. The header says what Guard is waiting for: your merge.
+
+![Fix pull requests](docs/screenshots/3-pull-requests.png)
+
+**4. Review on GitHub.** Each PR explains the score, the exact file changes, and the sources it checked (php.net release, Docker tag).
+
+![Fix PR on GitHub](docs/screenshots/4-github-pr.png)
+
+**5. Back online.** Merge the PR (Guard redeploys automatically) or press **Bring the app back online**. Guard starts the patched version, checks it really runs PHP 8.3.36, and removes the maintenance page.
+
+![Back online and patched](docs/screenshots/5-back-online.png)
+
+The dashboard is read-only: apart from Connect, the only things you can do are open the PRs and bring the app back. **Disconnect** (top right) saves the run and resets the demo. The older step-by-step chat view is still at `/chat`.
+
 ## The problem
 
 When a critical CVE drops, security teams lose hours checking whether they run the affected package, whether it is exposed, and whether a patch exists. Keyword alerts drown them; naive automation takes down services that were never at risk.
@@ -54,7 +80,7 @@ docker compose -f target-system/docker-compose.yml up -d
 5. **Dashboard**: `cd dashboard && pnpm install && pnpm dev`, then open http://localhost:3000. The shop is at http://localhost:8080.
 6. **Push the repo to GitHub** before a live run: the Remediation agent reads `target-system/` from the default branch and opens PRs against it.
 
-Demo buttons: **Connect Guard**, **Replay 21 Oct feed**, **Approve and restore shop**, **Reset demo** (also `scripts/reset.sh`, add `--clear-intel` to force fresh research).
+On the main page, **Connect and start** scans the services and replays the 21 Oct feed in one go; **Bring the app back online** restores the shop; **Disconnect** resets the demo (also `scripts/reset.sh`, add `--clear-intel` to force fresh research). The chat view at `/chat` keeps the separate Replay and Approve buttons.
 
 ### Live and fallback mode
 

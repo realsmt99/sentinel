@@ -4,6 +4,7 @@ runtime's worker thread. Errors answer {"ok": false, "error": "..."} with a 4xx/
 from __future__ import annotations
 
 import logging
+import threading
 import time
 from functools import lru_cache
 from typing import Any
@@ -36,6 +37,8 @@ class ConnectBody(BaseModel):
     compose_file: str | None = None
     target_url: str | None = None
     ntfy_topic: str | None = None
+    # Replay the feed right after the scan, so the whole pipeline runs without another click.
+    autopilot: bool = False
 
 
 class FieldTestBody(BaseModel):
@@ -142,12 +145,28 @@ def create_app(runtime: Runtime) -> FastAPI:
         if applied["changed"]:
             db.log_line(f"Connect: project settings updated ({', '.join(applied['changed'])})", "success")
         narrate.connected(services)
+        autopilot = start_replay("Autopilot: replaying the CVE feed, no click needed") if body and body.autopilot else None
         return {
             "ok": True,
             "count": len(services),
             "changed": applied["changed"],
             "services": [{k: s.get(k) for k in _SERVICE_KEYS} for s in services],
+            "autopilot": autopilot,
         }
+
+    replay_lock = threading.Lock()
+
+    def start_replay(log_line: str | None = None) -> dict[str, Any] | None:
+        """Queues the feed replay unless one is queued, running or done. Atomic: the autopilot of every open
+        dashboard tab may ask at the same moment."""
+        with replay_lock:
+            if runtime.busy_with("replay", "advisory") or db.cve_count() > 0:
+                return None
+            if log_line:
+                db.log_line(log_line, "info")
+            narrate.user("Replay the NVD feed of 21 October 2026")
+            runtime.submit("replay", runtime.replay_job)
+        return {"started": "replay", "cves": _feed_size(), "chunk_size": settings.replay_chunk_size}
 
     @app.post("/demo/replay")
     def replay() -> dict[str, Any]:
@@ -157,9 +176,10 @@ def create_app(runtime: Runtime) -> FastAPI:
             raise ApiError(409, "no system connected: POST /connect first")
         if db.cve_count() > 0:
             raise ApiError(409, "the feed was already replayed: POST /demo/reset first")
-        narrate.user("Replay the NVD feed of 21 October 2026")
-        runtime.submit("replay", runtime.replay_job)
-        return {"ok": True, "started": "replay", "cves": _feed_size(), "chunk_size": settings.replay_chunk_size}
+        started = start_replay()
+        if started is None:
+            raise ApiError(409, "busy: the feed replay is already queued")
+        return {"ok": True, **started}
 
     @app.post("/restore/{service}")
     def restore(service: str) -> dict[str, Any]:

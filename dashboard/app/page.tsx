@@ -1,5 +1,5 @@
-import { Chat } from "@/components/chat/chat";
+import { AutoDashboard } from "@/components/auto/auto-dashboard";
 
 export default function Home() {
-  return <Chat />;
+  return <AutoDashboard />;
 }
