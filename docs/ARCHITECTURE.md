@@ -1,18 +1,18 @@
-# Sentinel architecture
+# Guard architecture
 
-Sentinel plugs into a running system, reads the CVE feed, and lets a team of OpenAI agents decide, per service, what a new vulnerability actually means. The demo uses **PHP2Shell** (CVE-2026-109618 and CVE-2026-109619, disclosed 21 October 2026): unauthenticated RCE in PHP up to 8.5.11, fixed in 8.5.12, 8.4.27, 8.3.36 and 8.2.35, with no official release for 8.1 and older.
+Guard plugs into a running system, reads the CVE feed, and lets a team of OpenAI agents decide, per service, what a new vulnerability actually means. The demo uses **PHP2Shell** (CVE-2026-109618 and CVE-2026-109619, disclosed 21 October 2026): unauthenticated RCE in PHP up to 8.5.11, fixed in 8.5.12, 8.4.27, 8.3.36 and 8.2.35, with no official release for 8.1 and older.
 
 Sources: [CISA alert](https://www.cisa.gov/news-events/alerts/2026/10/21/critical-vulnerabilities-php-require-immediate-patching), [PHP Foundation](https://thephp.foundation/blog/2026/10/21/todays-php-security-release-and-how-were-strengthening-php-security/), [Tenable FAQ](https://www.tenable.com/blog/php2shell-cve-2026-109618-cve-2026-109619-frequently-asked-questions-about-critical-php-remote).
 
 The feed is real: `sentinel/fixtures/nvd-2026-10-21.json` is the NVD API dump of all 544 CVEs published that day. Only 2 of them carry CPE data (both `cpe:2.3:a:php:php`), and 40 mention "PHP" in the description, so a keyword script would have paged the team 40 times.
 
-## 1. How Sentinel plugs in
+## 1. How Guard plugs in
 
-The protected system (`target-system/`) knows nothing about Sentinel except four touch points:
+The protected system (`target-system/`) knows nothing about Guard except four touch points:
 
 1. **Container labels**: `sentinel.service`, `sentinel.language`, `sentinel.exposure`, `sentinel.revenue`, `sentinel.repo_path`, `sentinel.runtime_mode`. The live runtime version is detected, not declared.
 2. **One Nginx include** per route: `include /etc/nginx/sentinel/killswitch.conf;` serves the maintenance page while `runtime/flags/<service>.flag` exists.
-3. **Docker access** on the host, where the Sentinel agent runs.
+3. **Docker access** on the host, where the Guard agent runs.
 4. **A GitHub token** for the repository that builds the system.
 
 ```mermaid
@@ -23,7 +23,7 @@ flowchart LR
         admin["admin-panel: PHP 8.4.20 FPM, internal"]
         billing["billing-worker: Python 3.12, internal"]
     end
-    subgraph sentinelBox [Sentinel - runs on the host]
+    subgraph sentinelBox [Guard - runs on the host]
         scanner["Scanner: labels + live versions"]
         agentTeam["Agent team + orchestrator"]
         api["FastAPI :8000"]
@@ -43,7 +43,7 @@ flowchart LR
 
 ## 2. System overview
 
-Everything Sentinel knows or decides is a row in one Aiven for PostgreSQL service: the inventory, the CVE feed and its triage, the threat intel, the incidents with their scores, and every agent step. Postgres is also the event bus: inserting CVEs fires `pg_notify`, which wakes the agent.
+Everything Guard knows or decides is a row in one Aiven for PostgreSQL service: the inventory, the CVE feed and its triage, the threat intel, the incidents with their scores, and every agent step. Postgres is also the event bus: inserting CVEs fires `pg_notify`, which wakes the agent.
 
 ```mermaid
 flowchart TB
@@ -76,7 +76,7 @@ flowchart LR
         aivenMcp["Aiven MCP"]
         keenableMcpDev["Keenable MCP"]
     end
-    subgraph runTime [Run time - Sentinel]
+    subgraph runTime [Run time - Guard]
         intelAgent["Threat Intel + Remediation agents"]
         keenableMcpRun["Keenable MCP via Agents SDK"]
         keenableRest["Keenable REST fallback"]
@@ -139,7 +139,7 @@ After the agents finish, the orchestrator verifies postconditions (the service r
 sequenceDiagram
     autonumber
     participant Dash as Dashboard
-    participant API as Sentinel API
+    participant API as Guard API
     participant PG as Aiven Postgres
     participant Orch as Orchestrator
     participant Agents as Agent team

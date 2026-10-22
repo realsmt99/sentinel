@@ -147,7 +147,7 @@ def decide(row: dict[str, Any], verdict: dict[str, Any] | None, inventory: Inven
             warning = f"{row['cve_id']}: Triage agent suspected the runtime itself, but there is no CPE data and the description does not name it"
             update.update(
                 triage_status=DISMISSED,
-                triage_reason=f"Needs CPE data before Sentinel acts on it. Agent note: {chosen['reason']}",
+                triage_reason=f"Needs CPE data before Guard acts on it. Agent note: {chosen['reason']}",
             )
     else:
         update.update(triage_status=DISMISSED, triage_reason=chosen["reason"])

@@ -8,7 +8,7 @@ export function useActions(onAccepted: () => void) {
   const [phases, setPhases] = useState<Record<string, ActionPhase>>({});
 
   const run = useCallback(
-    async (name: ActionName, service?: string | null) => {
+    async (name: ActionName, service?: string | null, payload?: Record<string, string>) => {
       const key = actionKey(name, service);
       setPhases((prev) => ({ ...prev, [key]: { kind: "sending", at: Date.now() } }));
 
@@ -17,7 +17,7 @@ export function useActions(onAccepted: () => void) {
         const res = await fetch(`/api/action/${name}`, {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify(service ? { service } : {}),
+          body: JSON.stringify({ ...payload, ...(service ? { service } : {}) }),
         });
         const body = (await res.json().catch(() => null)) as ActionResponse | null;
         if (body?.ok) {

@@ -23,7 +23,7 @@ _REST_FETCH_LIMIT = 12_000
 
 def _auth_headers() -> dict[str, str]:
     key = get_settings().keenable_api_key
-    return {"X-API-Key": key} if key else {"X-Keenable-Title": "Sentinel"}
+    return {"X-API-Key": key} if key else {"X-Keenable-Title": "Guard"}
 
 
 def keenable_mcp_server() -> MCPServerStreamableHttp:

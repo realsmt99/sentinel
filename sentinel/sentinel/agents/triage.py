@@ -12,7 +12,7 @@ from ..triage import Inventory, runtime_name
 from .common import model_settings
 from .models import TriageReport
 
-INSTRUCTIONS = """You are the Triage agent of Sentinel, the security team of a small online coffee roaster.
+INSTRUCTIONS = """You are the Triage agent of Guard, the security team of a small online coffee roaster.
 The CVEs below mention a language our services run, but NVD has no CPE data for them, so code cannot
 tell whether they affect us. For each CVE decide whether the flaw is in the language runtime itself
 (for PHP: the PHP interpreter, php-src) or in an application, CMS, plugin or library written in that

@@ -1,8 +1,8 @@
-# Sentinel
+# Guard
 
 **Autonomous SecOps agent team, built on Aiven for PostgreSQL and the OpenAI Agents SDK.**
 
-Sentinel plugs into a running system, reads the CVE feed, and decides per service what a new vulnerability actually means: dismiss it, open a fix PR while the service keeps earning, or take it offline now. Built for the Aiven "Future Founders: Data-Centric Agents" hackathon.
+Guard plugs into a running system, reads the CVE feed, and decides per service what a new vulnerability actually means: dismiss it, open a fix PR while the service keeps earning, or take it offline now. Built for the Aiven "Future Founders: Data-Centric Agents" hackathon.
 
 ## The problem
 
@@ -12,8 +12,8 @@ On 21 October 2026, NVD published **544 CVEs**. Among them was **PHP2Shell** (CV
 
 ## What the demo shows
 
-1. **The company**: a running system (`target-system/`) with a public PHP 8.3.30 shop, an internal PHP 8.4.20 admin panel and a Python billing worker. It knows nothing about Sentinel.
-2. **Plug in**: Sentinel discovers the three services from Docker labels and live runtime versions, and stores the inventory in Aiven.
+1. **The company**: a running system (`target-system/`) with a public PHP 8.3.30 shop, an internal PHP 8.4.20 admin panel and a Python billing worker. It knows nothing about Guard.
+2. **Plug in**: Guard discovers the three services from Docker labels and live runtime versions, and stores the inventory in Aiven.
 3. **The feed**: the real NVD feed of 21 Oct is replayed. Code and a Triage agent narrow 544 CVEs to the 2 that matter.
 4. **The agent team**: Threat Intel researches PHP2Shell live (Keenable + NVD ranges), Risk Scoring scores every service in parallel: **shop 92**, admin-panel 67, billing-worker 0.
 5. **Action**: Containment takes the shop offline behind a maintenance page and alerts a phone; Remediation verifies the official fix and opens PRs that bump PHP in the Dockerfile and `composer.json`. The admin panel keeps running.
@@ -24,10 +24,10 @@ Every fact and decision is a row in Aiven. The agents research and explain; dete
 ## Architecture
 
 - **Aiven for PostgreSQL**: inventory, CVE feed and triage, threat intel, incidents with scores, every agent step, and the event bus (`LISTEN/NOTIFY`).
-- **Sentinel** (`sentinel/`, Python 3.12): feed replay, two-stage triage, a code-driven orchestrator and five OpenAI agents (Triage, Threat Intel, Risk Scoring, Containment, Remediation) with narrow tools; FastAPI on :8000.
+- **Guard** (`sentinel/`, Python 3.12): feed replay, two-stage triage, a code-driven orchestrator and five OpenAI agents (Triage, Threat Intel, Risk Scoring, Containment, Remediation) with narrow tools; FastAPI on :8000.
 - **Keenable**: live web research for the agents, via MCP (REST fallback).
 - **Dashboard** (`dashboard/`, Next.js): feed funnel, agent lanes, service cards with scores, live trace, incident detail; :3000.
-- **target-system/**: the protected "company", with one Nginx include as Sentinel's maintenance switch.
+- **target-system/**: the protected "company", with one Nginx include as Guard's maintenance switch.
 
 Diagrams and details: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
@@ -50,11 +50,11 @@ SHOP_IMAGE=sentinel-shop:patched docker compose -f target-system/docker-compose.
 docker compose -f target-system/docker-compose.yml up -d
 ```
 
-4. **Sentinel**: `cd sentinel && uv run sentinel`
+4. **Guard**: `cd sentinel && uv run sentinel`
 5. **Dashboard**: `cd dashboard && pnpm install && pnpm dev`, then open http://localhost:3000. The shop is at http://localhost:8080.
 6. **Push the repo to GitHub** before a live run: the Remediation agent reads `target-system/` from the default branch and opens PRs against it.
 
-Demo buttons: **Connect Sentinel**, **Replay 21 Oct feed**, **Approve and restore shop**, **Reset demo** (also `scripts/reset.sh`, add `--clear-intel` to force fresh research).
+Demo buttons: **Connect Guard**, **Replay 21 Oct feed**, **Approve and restore shop**, **Reset demo** (also `scripts/reset.sh`, add `--clear-intel` to force fresh research).
 
 ### Live and fallback mode
 

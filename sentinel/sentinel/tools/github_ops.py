@@ -13,7 +13,9 @@ from ..config import REPO_ROOT, get_settings
 
 log = logging.getLogger("sentinel.github")
 
-BRANCH_PREFIX = "sentinel/"
+BRANCH_PREFIX = "guard/"
+# Branches opened before the rename from Sentinel to Guard are still cleaned up by the demo reset.
+CLEANUP_PREFIXES = (BRANCH_PREFIX, "sentinel/")
 NOT_CONFIGURED = "skipped: GitHub not configured (GITHUB_TOKEN / GITHUB_REPO unset)"
 _VERSION_RE = re.compile(r"^\d+\.\d+\.\d+$")
 _ARG_RE = re.compile(r"(?m)^(ARG\s+PHP_VERSION=)(\S+)")
@@ -218,7 +220,7 @@ def open_fix_pr(
                     "reason": f"{', '.join(files)} already pin PHP {target_version} on {base}: nothing to change"}
         pr = repo.create_pull(base=base, head=branch, title=title, body=body)
         try:
-            pr.add_to_labels("security", "sentinel")
+            pr.add_to_labels("security", "guard")
         except GithubException:
             pass
     return {"ok": True, "pr_url": pr.html_url, "number": pr.number, "branch": branch,
@@ -226,16 +228,17 @@ def open_fix_pr(
 
 
 def close_sentinel_prs() -> dict[str, Any]:
-    """Demo reset: close open PRs from sentinel/* branches and delete those branches."""
+    """Demo reset: close open PRs from guard/* (and legacy sentinel/*) branches and delete those branches."""
     if not get_settings().github_enabled:
         return {"skipped": True, "reason": NOT_CONFIGURED}
     repo = _repo()
     closed, deleted = [], []
     for pr in repo.get_pulls(state="open"):
-        if pr.head.ref.startswith(BRANCH_PREFIX) and pr.head.repo and pr.head.repo.full_name == repo.full_name:
+        if pr.head.ref.startswith(CLEANUP_PREFIXES) and pr.head.repo and pr.head.repo.full_name == repo.full_name:
             pr.edit(state="closed")
             closed.append(pr.number)
-    for ref in repo.get_git_matching_refs(f"heads/{BRANCH_PREFIX}"):
-        ref.delete()
-        deleted.append(ref.ref.removeprefix("refs/heads/"))
+    for prefix in CLEANUP_PREFIXES:
+        for ref in repo.get_git_matching_refs(f"heads/{prefix}"):
+            ref.delete()
+            deleted.append(ref.ref.removeprefix("refs/heads/"))
     return {"closed_prs": closed, "deleted_branches": deleted}

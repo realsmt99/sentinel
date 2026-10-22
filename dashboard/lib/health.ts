@@ -26,7 +26,7 @@ const CHECK_LABEL: Record<string, string> = {
   listener: "Listener",
 };
 
-// Sentinel cannot act without these; the other integrations have code fallbacks.
+// Guard cannot act without these; the other integrations have code fallbacks.
 const REQUIRED_CHECKS = new Set(["db", "docker", "listener"]);
 
 function checkItem(key: string, value: HealthValue): HealthItem {
@@ -42,7 +42,7 @@ function checkItem(key: string, value: HealthValue): HealthItem {
     case "connected":
       return value
         ? { key, label: "Connected", tone: "success", detail: "services discovered" }
-        : { key, label: "Not connected", tone: "muted", detail: "run Connect Sentinel" };
+        : { key, label: "Not connected", tone: "muted", detail: "run Connect Guard" };
     case "busy":
       return value
         ? { key, label: "Busy", tone: "info", detail: typeof value === "string" ? value : "a job is running" }

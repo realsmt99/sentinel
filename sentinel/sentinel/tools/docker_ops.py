@@ -12,7 +12,7 @@ from typing import Any
 import httpx
 
 from .. import db
-from ..config import COMPOSE_FILE, FLAGS_DIR, REPO_ROOT, get_settings
+from ..config import FLAGS_DIR, REPO_ROOT, get_settings
 from ..scoring import OFFLINE_THRESHOLD
 from ..triage import runtime_name
 
@@ -45,7 +45,7 @@ def docker(*args: str, timeout: float = 30, env: dict[str, str] | None = None) -
 
 
 def compose(*args: str, env: dict[str, str], timeout: float = 180) -> str:
-    return docker("compose", "-f", str(COMPOSE_FILE), *args, timeout=timeout, env=env)
+    return docker("compose", "-f", str(get_settings().compose_file), *args, timeout=timeout, env=env)
 
 
 def docker_available() -> bool:

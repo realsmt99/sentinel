@@ -36,7 +36,7 @@ function buildStats(state: DashboardState): HeroStat[] {
     {
       label: "Alerts",
       value: `${formatCount(funnel.keyword_hits)} → ${formatCount(groups)}`,
-      hint: "keyword script vs Sentinel incidents",
+      hint: "keyword script vs Guard incidents",
     },
     {
       label: "Time to mitigate",
@@ -65,7 +65,7 @@ function buildMessage(state: DashboardState, dbNowMs: number): Omit<Headline, "s
     return {
       eyebrow: "Watching",
       title: `${services.length} services under watch`,
-      body: `Sentinel discovered ${list(services.map((s) => s.name))} from their Docker labels and live runtimes. Replay the NVD feed of 21 October 2026 to see what it does with 544 new CVEs.`,
+      body: `Guard discovered ${list(services.map((s) => s.name))} from their Docker labels and live runtimes. Replay the NVD feed of 21 October 2026 to see what it does with 544 new CVEs.`,
       tone: "success",
     };
   }

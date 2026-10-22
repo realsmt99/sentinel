@@ -124,6 +124,10 @@ export interface DashboardState {
   incidents: Incident[];
   /** Newest threat_intel row per component. */
   threatIntel: ThreatIntelRow[];
+  /** agent_log lines about phone alerts (send_alert calls and their outcome), oldest first. */
+  alerts: LogLine[];
+  /** URL of the protected website (TARGET_URL). */
+  targetUrl: string;
 }
 
 export type StateErrorReason = "not_configured" | "unreachable" | "schema_missing" | "query_failed";
@@ -135,6 +139,19 @@ export interface StateError {
 }
 
 export type StateResponse = DashboardState | StateError;
+
+/** GET /api/site: what the protected website served to a real request just now. */
+export interface SiteCheck {
+  url: string;
+  status: number | null;
+  ms: number;
+  /** The Guard maintenance page was served. */
+  maintenance: boolean;
+  /** From the shop footer ("Powered by PHP x.y.z"). */
+  phpVersion: string | null;
+  error: string | null;
+  checkedAt: string;
+}
 
 /** GET /health values: capability booleans, plus `mode` ("live" | "fallback") and `busy` (null or the running job). */
 export type HealthValue = boolean | string | null;

@@ -5,7 +5,7 @@ import { ArrowCounterClockwise, Broadcast, PlugsConnected, ShieldCheck } from "@
 import type { ActionControl, ActionControls } from "@/lib/actions";
 import type { ActionName } from "@/lib/types";
 import { toneText } from "./ui/tone";
-import { Button } from "./ui/button";
+import { Button, type ButtonTheme } from "./ui/button";
 
 const CONFIRM_WINDOW_MS = 4_000;
 
@@ -48,7 +48,15 @@ export function ActionBar({ controls, onRun }: ActionBarProps) {
   );
 }
 
-export function ActionButtonView({ control, onRun }: { control: ActionControl; onRun: (control: ActionControl) => void }) {
+interface ActionButtonViewProps {
+  control: ActionControl;
+  onRun: (control: ActionControl) => void;
+  /** Hide the hint line under the button, e.g. inside a header. */
+  compact?: boolean;
+  theme?: ButtonTheme;
+}
+
+export function ActionButtonView({ control, onRun, compact = false, theme = "dark" }: ActionButtonViewProps) {
   const { button, busy, disabled } = control;
   const [armed, setArmed] = useState(false);
 
@@ -74,6 +82,7 @@ export function ActionButtonView({ control, onRun }: { control: ActionControl; o
     <div className="flex flex-col items-start gap-1.5">
       <Button
         variant={variant}
+        theme={theme}
         busy={busy}
         disabled={disabled}
         title={button.hint ?? undefined}
@@ -82,7 +91,9 @@ export function ActionButtonView({ control, onRun }: { control: ActionControl; o
       >
         {label}
       </Button>
-      {button.hint && <span className="max-w-60 pl-4 text-[11px] leading-snug text-zinc-500">{button.hint}</span>}
+      {button.hint && !compact && (
+        <span className={`max-w-60 pl-4 text-[11px] leading-snug ${theme === "light" ? "text-mute" : "text-zinc-500"}`}>{button.hint}</span>
+      )}
     </div>
   );
 }

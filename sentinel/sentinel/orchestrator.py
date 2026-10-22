@@ -187,7 +187,7 @@ async def handle_advisory(component: str, cve_ids: list[str]) -> None:
                component=component)
 
     async with (keenable_session() if live else nullcontext()) as keenable:
-        with trace(f"Sentinel {component} {' '.join(cve_ids)}", metadata={"component": component}):
+        with trace(f"Guard {component} {' '.join(cve_ids)}", metadata={"component": component}):
             run.intel = await run_intel(run, keenable)
             run.facts = await _db(risk.load_facts, component, run.intel)
             run.slug = remediation_agent.advisory_slug(run.intel, component, cve_ids)
@@ -303,7 +303,7 @@ async def run_scoring(run: AdvisoryContext, service: dict[str, Any]) -> None:
 
     agrees = assessment is not None and (assessment.score, assessment.band) == (incident["danger_score"], incident["band"])
     if assessment is not None and not agrees:
-        await _log(f"{label}: the agent reported {assessment.score} {assessment.band}; Sentinel keeps the computed "
+        await _log(f"{label}: the agent reported {assessment.score} {assessment.band}; Guard keeps the computed "
                    f"{incident['danger_score']} {incident['band']}", "warn", **lane_kw)
     explanation = assessment.explanation if agrees else scoring_agent.explain(service, incident, computed)
     await _db(db.update_incident, incident["id"], explanation=explanation)
@@ -416,7 +416,7 @@ async def run_remediation(run: AdvisoryContext, service: dict[str, Any], keenabl
     title = next((r.get("title") for r in ctx.pr_results if r.get("title")), "")
     remediation = result.model_copy(update={"pr_url": pr_url}).model_dump()
     remediation.update({
-        "branch": f"sentinel/{run.slug}-{name}",
+        "branch": f"guard/{run.slug}-{name}",
         "breaking_change": title.startswith("[breaking change"),
         "pr_skipped_reason": skipped,
         "docker_tags_checked": [t.get("image") for t in ctx.tag_checks if t.get("exists")],
@@ -427,7 +427,7 @@ async def run_remediation(run: AdvisoryContext, service: dict[str, Any], keenabl
         await _db(db.update_service, name, status="PATCH_PENDING")
 
     if incident["band"] == PR_ONLY:
-        alert_title = f"Sentinel: fix PR for {name} ({run.short_name})"
+        alert_title = f"Guard: fix PR for {name} ({run.short_name})"
         alert_message = (
             f"Danger score {incident['danger_score']}/100 ({incident['band']}): {name} keeps running.\n"
             f"Fix: PHP {result.target_version or '?'}" + (f", PR {pr_url}" if pr_url else f" ({skipped or 'PR not opened'})")
@@ -473,5 +473,5 @@ async def log_summary(run: AdvisoryContext, started: float) -> None:
             notes.append("PR open")
         parts.append(f"{incident['service']} {incident['danger_score']} {incident['band']}"
                      + (f" ({', '.join(notes)})" if notes else ""))
-    await _log(f"Sentinel: {run.short_name} handled in {time.monotonic() - started:.0f}s: " + "; ".join(parts),
+    await _log(f"Guard: {run.short_name} handled in {time.monotonic() - started:.0f}s: " + "; ".join(parts),
                "success", component=run.component)

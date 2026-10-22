@@ -28,7 +28,7 @@ function Code({ children }: { children: ReactNode }) {
 /** Skeleton of the overview grid, so the page does not jump when data arrives. */
 export function LoadingState() {
   return (
-    <div aria-busy className="flex flex-col gap-5" aria-label="Loading Sentinel state">
+    <div aria-busy className="flex flex-col gap-5" aria-label="Loading Guard state">
       <div className="grid gap-5 lg:grid-cols-12">
         <div className="skeleton h-72 rounded-[1.75rem] lg:col-span-7" />
         <div className="skeleton h-72 rounded-[1.5rem] lg:col-span-5" />
@@ -85,7 +85,7 @@ export function ApiUnreachable({ error }: { error: string }) {
 
 const TOUCH_POINTS = [
   { icon: <Stack size={18} weight="light" />, title: "Container labels", text: "exposure, revenue, repo path; versions are detected live" },
-  { icon: <ShieldChevron size={18} weight="light" />, title: "One Nginx include", text: "a maintenance switch Sentinel can flip per service" },
+  { icon: <ShieldChevron size={18} weight="light" />, title: "One Nginx include", text: "a maintenance switch Guard can flip per service" },
   { icon: <Cube size={18} weight="light" />, title: "Docker access", text: "to inspect, stop and restore containers" },
   { icon: <GitPullRequest size={18} weight="light" />, title: "A GitHub token", text: "to open fix PRs, never to merge them" },
 ];
@@ -97,7 +97,7 @@ export function NoSystemConnected({ connect, onRun }: { connect: ActionControl; 
         <div>
           <Eyebrow>Not connected</Eyebrow>
           <h1 className="mt-5 max-w-[20ch] text-3xl font-medium leading-[1.08] tracking-tighter text-zinc-50 md:text-[2.5rem]">
-            Plug Sentinel into a running system
+            Plug Guard into a running system
           </h1>
           <p className="mt-4 max-w-[58ch] text-sm leading-relaxed text-zinc-400">
             Connecting runs the scanner: it reads the <code className="font-mono text-zinc-200">sentinel.*</code> Docker labels,

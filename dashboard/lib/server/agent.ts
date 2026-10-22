@@ -7,11 +7,12 @@ export interface AgentReply {
   body: unknown;
 }
 
-export async function callAgent(method: "GET" | "POST", path: string, timeoutMs: number): Promise<AgentReply> {
+export async function callAgent(method: "GET" | "POST", path: string, timeoutMs: number, payload?: unknown): Promise<AgentReply> {
   const res = await fetch(`${getAgentUrl()}${path}`, {
     method,
     cache: "no-store",
-    headers: { accept: "application/json" },
+    headers: payload === undefined ? { accept: "application/json" } : { accept: "application/json", "content-type": "application/json" },
+    body: payload === undefined ? undefined : JSON.stringify(payload),
     signal: AbortSignal.timeout(timeoutMs),
   });
   const text = await res.text();
@@ -29,9 +30,9 @@ export async function callAgent(method: "GET" | "POST", path: string, timeoutMs:
 export function describeAgentError(err: unknown): string {
   const name = err instanceof Error ? err.name : "";
   if (name === "TimeoutError" || name === "AbortError") {
-    return `Sentinel agent API at ${getAgentOrigin()} did not answer in time`;
+    return `Guard agent API at ${getAgentOrigin()} did not answer in time`;
   }
-  return `Sentinel agent API is not reachable at ${getAgentOrigin()} - is it running?`;
+  return `Guard agent API is not reachable at ${getAgentOrigin()} - is it running?`;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -49,6 +50,6 @@ export function toActionResponse(reply: AgentReply): { ok: true } & Record<strin
       ? detail
       : detail !== undefined
         ? JSON.stringify(detail).slice(0, 300)
-        : `Sentinel agent API answered HTTP ${reply.status}`;
+        : `Guard agent API answered HTTP ${reply.status}`;
   return { ok: false, error };
 }

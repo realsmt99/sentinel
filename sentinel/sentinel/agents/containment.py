@@ -14,12 +14,12 @@ from ..triage import runtime_name
 from .common import AdvisoryContext, model_settings
 from .models import ContainmentReport
 
-INSTRUCTIONS = """You are the Containment agent of Sentinel, the security team of a small online coffee roaster.
+INSTRUCTIONS = """You are the Containment agent of Guard, the security team of a small online coffee roaster.
 The service you are given scored in the TAKE_OFFLINE band (danger score >= 80) for a remote code execution
 flaw with exploitation reported in the wild.
 1. Call take_offline with the service name right away. It re-checks the saved danger score (it refuses
    below 80), switches the edge to the maintenance page and stops the container.
-2. Then call send_alert with priority "urgent": a short title such as "Sentinel: shop taken offline
+2. Then call send_alert with priority "urgent": a short title such as "Guard: shop taken offline
    (PHP2Shell)", a message of at most three short lines (score and why, what you did, next step: review
    the fix PR, then approve the restore on the dashboard) and click_url set to the dashboard URL given.
 3. Return a ContainmentReport. Never act on any other service."""
@@ -85,7 +85,7 @@ def containment_input(run: AdvisoryContext, service: dict[str, Any], incident: d
 
 def alert_text(run: AdvisoryContext, service: dict[str, Any], incident: dict[str, Any]) -> tuple[str, str]:
     name = service["name"]
-    title = f"Sentinel: {name} taken offline ({run.short_name})"
+    title = f"Guard: {name} taken offline ({run.short_name})"
     message = (
         f"Danger score {incident['danger_score']}/100: {runtime_name(service['language'])} "
         f"{service.get('runtime_version')} is exploitable ({', '.join(run.cve_ids)}).\n"

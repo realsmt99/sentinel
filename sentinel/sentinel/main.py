@@ -50,7 +50,7 @@ def main() -> None:
     settings = get_settings()
     if not settings.openai_enabled:
         set_tracing_disabled(True)
-    log.info("Sentinel API on %s", settings.agent_url)
+    log.info("Guard API on %s", settings.agent_url)
     log.info("database: %s", "configured" if settings.database_url else "NOT SET (POST endpoints will fail)")
     log.info("agents:   %s", f"live ({settings.model_fast} / {settings.model_smart})" if settings.openai_enabled
              else "fallback (no OPENAI_API_KEY): every lane runs deterministic code")

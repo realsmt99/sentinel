@@ -1,6 +1,6 @@
-# Sentinel dashboard
+# Guard dashboard
 
-Next.js 16 (App Router, Cache Components) dashboard for the Sentinel demo. It polls `/api/state` every second (paused while the tab is hidden) and proxies its buttons to the Sentinel agent API.
+Next.js 16 (App Router, Cache Components) dashboard for the Guard demo. It polls `/api/state` every second (paused while the tab is hidden) and proxies its buttons to the Guard agent API.
 
 ## Run
 
@@ -26,7 +26,7 @@ pnpm build && pnpm start    # for the demo: no dev overlay, no hot reload
 
 ## Local data without the backend
 
-`scripts/seed-snapshot.mjs` fills a local Postgres (with `sentinel/db/schema.sql` applied) from the real NVD fixture. It refuses non-local databases because it truncates every Sentinel table.
+`scripts/seed-snapshot.mjs` fills a local Postgres (with `sentinel/db/schema.sql` applied) from the real NVD fixture. It refuses non-local databases because it truncates every Guard table.
 
 ```bash
 docker run -d --name sentinel-pg-dev -p 55433:5432 -e POSTGRES_PASSWORD=test postgres:16

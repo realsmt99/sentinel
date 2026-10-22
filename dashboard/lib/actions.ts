@@ -79,7 +79,7 @@ function effectVisible(name: ActionName, service: string | null, state: Dashboar
 function waitingText(button: ActionButton): string {
   switch (button.name) {
     case "connect":
-      return "Sentinel is scanning Docker for labelled services...";
+      return "Guard is scanning Docker for labelled services...";
     case "replay":
       return "Replay accepted, waiting for the first CVEs...";
     case "restore":
@@ -109,7 +109,7 @@ export function resolveActionStatus(
       if (age < timeout + MESSAGE_TTL_MS) {
         return {
           kind: "stalled",
-          message: `Sentinel accepted "${button.name}" but nothing changed after ${timeout / 1000}s - check the agent trace.`,
+          message: `Guard accepted "${button.name}" but nothing changed after ${timeout / 1000}s - check the agent trace.`,
         };
       }
       return { kind: "idle" };
@@ -159,7 +159,7 @@ function buildButtons(state: DashboardState, dbNowMs: number) {
     key: actionKey("connect"),
     name: "connect",
     service: null,
-    label: connected ? "Re-scan system" : "Connect Sentinel",
+    label: connected ? "Re-scan system" : "Connect Guard",
     busyLabel: connected ? "Scanning..." : "Connecting...",
     confirmLabel: null,
     enabled: true,

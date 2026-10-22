@@ -21,7 +21,7 @@ from ..triage import runtime_name
 from .common import AdvisoryContext, model_settings
 from .models import RemediationResult
 
-INSTRUCTIONS = """You are a Remediation agent of Sentinel, the security team of a small online coffee roaster.
+INSTRUCTIONS = """You are a Remediation agent of Guard, the security team of a small online coffee roaster.
 You prepare the fix for one service and open a pull request. You never merge anything.
 
 Steps:
@@ -36,9 +36,9 @@ Steps:
 4. read_repo_file for the service's Dockerfile and composer.json, then call open_fix_pr once with the full
    new content of both files. Change only the version: Dockerfile "ARG PHP_VERSION=<target>";
    composer.json require.php "^<target>" and config.platform.php "<target>"; keep everything else
-   byte-for-byte. Title: "Sentinel: bump <service> to PHP <target> (<advisory>)", prefixed with
+   byte-for-byte. Title: "Guard: bump <service> to PHP <target> (<advisory>)", prefixed with
    "[breaking change, needs review] " for a branch upgrade. Body in Markdown: danger score and band, why,
-   the changes, verification (release link, Docker tag), sources, and "Opened by Sentinel, never auto-merged".
+   the changes, verification (release link, Docker tag), sources, and "Opened by Guard, never auto-merged".
 5. Return a RemediationResult. pr_url is the URL open_fix_pr returned, or null when it was skipped
    (for example GitHub not configured); say so in notes."""
 
@@ -101,7 +101,7 @@ async def submit_fix_pr(
             edits=edits,
             title=title,
             body=body,
-            branch=f"sentinel/{run.slug}-{service_name}",
+            branch=f"guard/{run.slug}-{service_name}",
         )
     except Exception as exc:  # validation errors and GitHub API errors go back to the model
         result = {"ok": False, "error": str(exc)[:300]}
@@ -189,7 +189,7 @@ def remediation_input(run: AdvisoryContext, service: dict[str, Any], incident: d
 def pr_text(run: AdvisoryContext, service: dict[str, Any], incident: dict[str, Any], target: str, breaking: bool,
             tag: dict[str, Any], files: list[str], why: str) -> tuple[str, str]:
     name = service["name"]
-    title = f"{'[breaking change, needs review] ' if breaking else ''}Sentinel: bump {name} to PHP {target} ({run.short_name})"
+    title = f"{'[breaking change, needs review] ' if breaking else ''}Guard: bump {name} to PHP {target} ({run.short_name})"
     source = ((run.intel.get("fixed_versions") or {}).get(branch_of(target)) or {}).get("source_url")
     lines = [
         f"## {run.short_name}: fix for `{name}`",
@@ -216,7 +216,7 @@ def pr_text(run: AdvisoryContext, service: dict[str, Any], incident: dict[str, A
     sources = run.intel.get("sources") or []
     if sources:
         lines += ["", "### Sources"] + [f"- [{s.get('title') or s.get('url')}]({s.get('url')})" for s in sources[:6]]
-    lines += ["", "---", "Opened by Sentinel, never auto-merged: a human reviews, merges and approves the restore."]
+    lines += ["", "---", "Opened by Guard, never auto-merged: a human reviews, merges and approves the restore."]
     return title, "\n".join(lines)
 
 

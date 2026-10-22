@@ -2,6 +2,7 @@ import "server-only";
 
 import type { DashboardState, StateError } from "@/lib/types";
 import { getPool, redact } from "./db";
+import { getTargetUrl } from "./env";
 
 const LOG_LINES = 80;
 const KEYWORD_CVES = 60;
@@ -72,6 +73,14 @@ SELECT
                JOIN services s ON s.id = inc.service_id ) i
   ) AS incidents,
 
+  ( SELECT coalesce(json_agg(a ORDER BY a.id), '[]')
+      FROM ( SELECT id, component, agent, service, level, message, ts
+               FROM agent_log
+              WHERE message LIKE '%send_alert%' OR message LIKE '%phone alert%'
+              ORDER BY id DESC
+              LIMIT 20 ) a
+  ) AS alerts,
+
   ( SELECT coalesce(json_agg(t ORDER BY t.component), '[]')
       FROM ( SELECT DISTINCT ON (component) id, component, cve_ids, data, fetched_at
                FROM threat_intel
@@ -89,6 +98,7 @@ interface StateRow {
   log: DashboardState["log"];
   incidents: DashboardState["incidents"];
   threat_intel: DashboardState["threatIntel"];
+  alerts: DashboardState["alerts"];
 }
 
 const SCHEMA_ERROR_CODES = new Set(["42P01", "42703", "42883"]); // undefined table / column / function
@@ -141,6 +151,8 @@ export async function readDashboardState(): Promise<DashboardState | StateError>
       log: row.log,
       incidents: row.incidents,
       threatIntel: row.threat_intel,
+      alerts: row.alerts,
+      targetUrl: getTargetUrl(),
     };
   } catch (err) {
     const code = errorCode(err);
@@ -148,7 +160,7 @@ export async function readDashboardState(): Promise<DashboardState | StateError>
       return {
         ok: false,
         reason: "schema_missing",
-        message: `The Sentinel schema is missing or outdated (${errorMessage(err)}). Apply sentinel/db/schema.sql with psql.`,
+        message: `The Guard schema is missing or outdated (${errorMessage(err)}). Apply sentinel/db/schema.sql with psql.`,
       };
     }
     return { ok: false, reason: "query_failed", message: `Dashboard query failed: ${errorMessage(err)}` };

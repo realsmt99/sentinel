@@ -1,3 +1,5 @@
+import Link from "next/link";
+import { ListNumbers } from "@phosphor-icons/react";
 import type { HealthItem, LiveStatus } from "@/lib/health";
 import { Badge, StatusDot } from "./ui/badge";
 import { LogoMark } from "./ui/logo";
@@ -13,12 +15,19 @@ export function Header({ live, health }: HeaderProps) {
       <div className="flex items-center gap-3">
         <LogoMark className="size-7" />
         <div className="flex items-baseline gap-2.5">
-          <span className="text-[15px] font-semibold tracking-tight text-zinc-50">Sentinel</span>
+          <span className="text-[15px] font-semibold tracking-tight text-zinc-50">Guard</span>
           <span className="hidden text-xs text-zinc-500 sm:inline">autonomous SecOps on Aiven</span>
         </div>
         <Badge tone={live.tone} pulse={live.pulse}>
           {live.label}
         </Badge>
+        <Link
+          href="/"
+          className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs text-zinc-400 ring-1 ring-inset ring-white/10 transition-colors duration-300 hover:bg-white/5 hover:text-zinc-100"
+        >
+          <ListNumbers size={13} />
+          Step-by-step view
+        </Link>
       </div>
       <HealthStrip items={health} />
     </header>

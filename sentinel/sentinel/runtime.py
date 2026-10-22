@@ -85,7 +85,7 @@ class Runtime:
             except BaseException as exc:
                 job.error = exc
                 log.exception("job %s failed", job.name)
-                db.log_line(f"Sentinel: {job.name} failed: {exc}", "error")
+                db.log_line(f"Guard: {job.name} failed: {exc}", "error")
             finally:
                 with self._lock:
                     self.current = None

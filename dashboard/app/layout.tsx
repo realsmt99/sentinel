@@ -1,11 +1,14 @@
 import type { Metadata } from "next";
 import { GeistMono } from "geist/font/mono";
 import { GeistSans } from "geist/font/sans";
+import { Instrument_Serif } from "next/font/google";
 import "./globals.css";
 
+const serif = Instrument_Serif({ weight: "400", subsets: ["latin"], variable: "--font-instrument-serif", display: "swap" });
+
 export const metadata: Metadata = {
-  title: "Sentinel",
-  description: "Sentinel: CVE feed to agent team to contained, patched services",
+  title: "Guard",
+  description: "Guard: CVE feed to agent team to contained, patched services",
 };
 
 const GRAIN =
@@ -13,7 +16,7 @@ const GRAIN =
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={`h-full antialiased ${GeistSans.variable} ${GeistMono.variable}`}>
+    <html lang="en" className={`h-full antialiased ${GeistSans.variable} ${GeistMono.variable} ${serif.variable}`}>
       <body className="min-h-[100dvh] bg-ink-950 font-sans text-zinc-100 selection:bg-signal-400/30">
         <div aria-hidden className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
           <div className="absolute -left-[20%] -top-[30%] h-[70vh] w-[70vw] rounded-full bg-signal-400/[0.07] blur-[140px]" />

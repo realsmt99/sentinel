@@ -86,7 +86,7 @@ export function runtimeModeLabel(mode: string | null): string | null {
 }
 
 export function laneLabel(agent: AgentName | null, service: string | null): string {
-  if (!agent) return "Sentinel";
+  if (!agent) return "Guard";
   const name = AGENT_LABEL[agent] ?? agent;
   return service ? `${name} · ${service}` : name;
 }

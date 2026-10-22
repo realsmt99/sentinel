@@ -18,8 +18,12 @@ INTEL_FIXTURE = FIXTURES_DIR / "php2shell-intel.json"
 SCHEMA_SQL = SENTINEL_DIR / "db" / "schema.sql"
 FLAGS_DIR = REPO_ROOT / "runtime" / "flags"
 COMPOSE_FILE = REPO_ROOT / "target-system" / "docker-compose.yml"
+ENV_FILE = REPO_ROOT / ".env"
 
-load_dotenv(REPO_ROOT / ".env", override=False)
+# The project connection the dashboard's Connect form may change.
+EDITABLE_ENV = {"DATABASE_URL", "GITHUB_REPO", "NTFY_TOPIC", "TARGET_URL", "TARGET_COMPOSE_FILE"}
+
+load_dotenv(ENV_FILE, override=False)
 
 # Values copied verbatim from .env.example count as unset.
 _PLACEHOLDERS = {"sentinel-change-me", "your-user/sentinel"}
@@ -56,6 +60,7 @@ class Settings:
     agent_url: str
     dashboard_url: str
     target_url: str
+    compose_file: Path
     intel_offline: bool
     rescan_seconds: float
     replay_chunk_size: int
@@ -78,6 +83,32 @@ class Settings:
         return urlparse(self.agent_url).port or 8000
 
 
+def resolve_path(value: str | None) -> Path | None:
+    """A path from .env or the Connect form: absolute, or relative to the repo root."""
+    if not value:
+        return None
+    path = Path(value).expanduser()
+    return path if path.is_absolute() else REPO_ROOT / path
+
+
+def update_env(values: dict[str, str]) -> None:
+    """Persist connection settings to .env and apply them to this process at once."""
+    unknown = set(values) - EDITABLE_ENV
+    if unknown:
+        raise ValueError(f"not editable: {', '.join(sorted(unknown))}")
+    lines = ENV_FILE.read_text().splitlines() if ENV_FILE.exists() else []
+    for key, value in values.items():
+        entry = f"{key}={value}"
+        index = next((i for i, line in enumerate(lines) if line.startswith(f"{key}=")), None)
+        if index is None:
+            lines.append(entry)
+        else:
+            lines[index] = entry
+        os.environ[key] = value
+    ENV_FILE.write_text("\n".join(lines) + "\n")
+    get_settings.cache_clear()
+
+
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:
     return Settings(
@@ -96,6 +127,7 @@ def get_settings() -> Settings:
         agent_url=_env("AGENT_URL", "http://localhost:8000"),
         dashboard_url=_env("DASHBOARD_URL", "http://localhost:3000"),
         target_url=_env("TARGET_URL", "http://localhost:8080"),
+        compose_file=resolve_path(_env("TARGET_COMPOSE_FILE")) or COMPOSE_FILE,
         intel_offline=_flag("INTEL_OFFLINE"),
         rescan_seconds=float(_env("SENTINEL_RESCAN_SECONDS", "30")),
         replay_chunk_size=int(_env("SENTINEL_REPLAY_CHUNK", "25")),

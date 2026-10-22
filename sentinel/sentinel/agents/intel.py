@@ -1,4 +1,4 @@
-"""Threat Intel agent (smart model): Keenable MCP research plus NVD ranges from Sentinel's database."""
+"""Threat Intel agent (smart model): Keenable MCP research plus NVD ranges from Guard's database."""
 
 from __future__ import annotations
 
@@ -15,7 +15,7 @@ from ..tools.keenable import keenable_rest_tools
 from .common import model_settings
 from .models import ThreatIntel
 
-INSTRUCTIONS = """You are the Threat Intel agent of Sentinel, the security team of a small online coffee
+INSTRUCTIONS = """You are the Threat Intel agent of Guard, the security team of a small online coffee
 roaster that runs PHP. Research the advisory you are given and return a ThreatIntel object.
 
 Tools:
@@ -46,7 +46,7 @@ Only state facts found in NVD or in pages you fetched or saw in search results. 
 
 @function_tool
 async def get_nvd_ranges(cve_id: str) -> str:
-    """Official NVD data for one CVE from Sentinel's database: CVSS, CPE version ranges per branch and
+    """Official NVD data for one CVE from Guard's database: CVSS, CPE version ranges per branch and
     CISA's SSVC assessment.
 
     Args:

@@ -13,9 +13,10 @@ from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from pydantic import BaseModel
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from . import db, feed, scanner
+from . import connection, db, feed, scanner
 from .config import get_settings
 from .reset import reset_demo
 from .runtime import Runtime
@@ -25,6 +26,21 @@ log = logging.getLogger("sentinel.api")
 
 _SERVICE_KEYS = ("name", "language", "runtime_version", "runtime_mode", "image", "exposure", "monthly_revenue_eur",
                  "repo_path", "running")
+
+
+class ConnectBody(BaseModel):
+    """The dashboard's Connect form; empty or unchanged fields keep the current connection."""
+
+    database_url: str | None = None
+    github_repo: str | None = None
+    compose_file: str | None = None
+    target_url: str | None = None
+    ntfy_topic: str | None = None
+
+
+class FieldTestBody(BaseModel):
+    field: str
+    value: str = ""
 
 
 class ApiError(Exception):
@@ -60,7 +76,7 @@ def _keenable_reachable() -> bool:
 
 def create_app(runtime: Runtime) -> FastAPI:
     settings = get_settings()
-    app = FastAPI(title="Sentinel", version="0.1.0")
+    app = FastAPI(title="Guard", version="0.1.0")
     app.add_middleware(
         CORSMiddleware,
         allow_origins=sorted({settings.dashboard_url, "http://localhost:3000", "http://127.0.0.1:3000"}),
@@ -94,18 +110,38 @@ def create_app(runtime: Runtime) -> FastAPI:
         if busy:
             raise ApiError(409, f"busy: {busy[0]} is running")
 
+    @app.get("/config")
+    def config() -> dict[str, Any]:
+        return {"ok": True, **connection.current()}
+
+    @app.post("/config/test")
+    def config_test(body: FieldTestBody) -> dict[str, Any]:
+        if body.field not in connection.TESTS:
+            raise ApiError(400, f"unknown field {body.field!r}")
+        return {"ok": True, **connection.run_test(body.field, body.value)}
+
     @app.post("/connect")
-    def connect() -> dict[str, Any]:
+    def connect(body: ConnectBody | None = None) -> dict[str, Any]:
         require_db()
         refuse_while("reset")
+        applied = connection.apply(body.model_dump()) if body else {"changed": [], "restart_required": False}
+        if applied["restart_required"]:
+            raise ApiError(409, "the new database is saved in .env: restart Guard (backend and dashboard) to use it")
         try:
             with runtime.scan_lock:
                 services = scanner.scan()
         except docker_ops.DockerError as exc:
             raise ApiError(503, f"Docker: {exc}") from exc
         if not services:
-            raise ApiError(404, "no containers with sentinel.* labels found: is the target system running?")
-        return {"ok": True, "count": len(services), "services": [{k: s.get(k) for k in _SERVICE_KEYS} for s in services]}
+            raise ApiError(404, "no containers with sentinel.* labels found: is the project running?")
+        if applied["changed"]:
+            db.log_line(f"Connect: project settings updated ({', '.join(applied['changed'])})", "success")
+        return {
+            "ok": True,
+            "count": len(services),
+            "changed": applied["changed"],
+            "services": [{k: s.get(k) for k in _SERVICE_KEYS} for s in services],
+        }
 
     @app.post("/demo/replay")
     def replay() -> dict[str, Any]:
@@ -153,13 +189,14 @@ def create_app(runtime: Runtime) -> FastAPI:
                 connected = db.services_count() > 0
             except Exception:
                 connected = None
+        fresh = get_settings()
         return {
             "ok": db_ok and docker_ok,
             "db": db_ok,
-            "openai": settings.openai_enabled,
+            "openai": fresh.openai_enabled,
             "keenable": _cached("keenable", 60, _keenable_reachable),
-            "github": settings.github_enabled,
-            "ntfy": settings.ntfy_enabled,
+            "github": fresh.github_enabled,
+            "ntfy": fresh.ntfy_enabled,
             "docker": docker_ok,
             "mode": "live" if settings.openai_enabled else "fallback",
             "intel_offline": settings.intel_offline,

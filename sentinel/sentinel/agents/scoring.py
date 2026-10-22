@@ -16,9 +16,9 @@ from ..triage import runtime_name
 from .common import AdvisoryContext, model_settings
 from .models import RiskAssessment
 
-INSTRUCTIONS = """You are a Risk Scoring agent of Sentinel, the security team of a small online coffee roaster.
+INSTRUCTIONS = """You are a Risk Scoring agent of Guard, the security team of a small online coffee roaster.
 You assess one service for one advisory.
-1. Call compute_danger_score with the service name. It runs Sentinel's deterministic formula, saves the
+1. Call compute_danger_score with the service name. It runs Guard's deterministic formula, saves the
    result and returns the score, the band and the points per factor. Never compute or adjust the score.
 2. Return a RiskAssessment with exactly the returned score and band and a two-sentence explanation for
    the business owner: what is at stake for this service (exposure, revenue, runtime mode, fix
@@ -28,7 +28,7 @@ You assess one service for one advisory.
 
 @function_tool
 async def compute_danger_score(ctx: RunContextWrapper[AdvisoryContext], name: str) -> str:
-    """Compute and save Sentinel's deterministic danger score (0-100) of one service for the current
+    """Compute and save Guard's deterministic danger score (0-100) of one service for the current
     advisory. Returns the score, band, points per factor and the version verdict.
 
     Args:
@@ -90,8 +90,8 @@ def explain(service: dict[str, Any], incident: dict[str, Any], result: dict[str,
     no_fix = " Its branch has no official fix." if breakdown.get("no_official_fix") else ""
     target = f" to {fixed}" if fixed else ""
     action = {
-        TAKE_OFFLINE: f"Sentinel takes it offline now and opens a fix PR{target}.",
-        PR_ONLY: f"It keeps running; Sentinel opens a fix PR{target} and alerts the team.",
+        TAKE_OFFLINE: f"Guard takes it offline now and opens a fix PR{target}.",
+        PR_ONLY: f"It keeps running; Guard opens a fix PR{target} and alerts the team.",
         DIGEST: f"It keeps running; a fix PR{target} goes into the digest without an alert.",
     }[band]
     return f"{stake}{mode_note if mode else ''}, so the advisory scores {score}/100 ({band}).{no_fix} {action}"

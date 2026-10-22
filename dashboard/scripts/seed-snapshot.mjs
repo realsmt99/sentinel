@@ -4,7 +4,7 @@
 //   DATABASE_URL=postgres://postgres:test@localhost:55433/postgres node scripts/seed-snapshot.mjs [scenario]
 //
 // Scenarios: empty | connected | replay (streams the feed like feed.py) | mid-demo (default) | resolved.
-// Truncates every Sentinel table first, so it refuses to run against a non-local database.
+// Truncates every Guard table first, so it refuses to run against a non-local database.
 
 import { readFileSync } from "node:fs";
 import { setTimeout as sleep } from "node:timers/promises";
@@ -30,7 +30,7 @@ if (!databaseUrl) {
   process.exit(1);
 }
 if (!LOCAL_HOSTS.has(new URL(databaseUrl).hostname)) {
-  console.error("Refusing to seed a non-local database: this script truncates every Sentinel table.");
+  console.error("Refusing to seed a non-local database: this script truncates every Guard table.");
   process.exit(1);
 }
 

@@ -3,6 +3,25 @@
 @theme {
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, "SFMono-Regular", monospace;
+  --font-serif: var(--font-instrument-serif), "Newsreader", Georgia, serif;
+
+  /* Stage view: warm monochrome with washed-out pastels used only for meaning. */
+  --color-bone-50: #fbfbfa;
+  --color-bone-100: #f7f6f3;
+  --color-bone-200: #efede8;
+  --color-line: #eaeaea;
+  --color-ink: #111111;
+  --color-ink-soft: #2f3437;
+  --color-mute: #787774;
+  --color-pale-red: #fdebec;
+  --color-pale-red-ink: #9f2f2d;
+  --color-pale-blue: #e1f3fe;
+  --color-pale-blue-ink: #1f6c9f;
+  --color-pale-green: #edf3ec;
+  --color-pale-green-ink: #346538;
+  --color-pale-yellow: #fbf3db;
+  --color-pale-yellow-ink: #956400;
+  --color-terminal: #1c1c1a;
 
   /* The single brand accent: a desaturated signal chartreuse. Status colours stay semantic. */
   --color-signal-200: oklch(0.94 0.09 124);
@@ -24,6 +43,24 @@
   --animate-ping-soft: ping-soft 2s var(--ease-out-expo) infinite;
   --animate-caret: caret 1.1s steps(1) infinite;
   --animate-shimmer: shimmer 1.8s linear infinite;
+  --animate-scene-in: scene-in 0.7s var(--ease-out-expo) both;
+  --animate-fill: fill 1.2s var(--ease-out-expo) both;
+
+  @keyframes scene-in {
+    from {
+      opacity: 0;
+      transform: translateX(28px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @keyframes fill {
+    from {
+      transform: scaleX(0);
+    }
+  }
 
   @keyframes rise {
     from {

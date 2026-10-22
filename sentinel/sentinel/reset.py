@@ -32,7 +32,7 @@ def reset_demo(clear_intel: bool = False) -> dict[str, Any]:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Reset the Sentinel demo to its baseline.")
+    parser = argparse.ArgumentParser(description="Reset the Guard demo to its baseline.")
     parser.add_argument("--clear-intel", action="store_true", help="also drop the threat_intel cache")
     args = parser.parse_args()
     logging.basicConfig(level=logging.WARNING)

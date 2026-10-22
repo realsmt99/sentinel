@@ -30,6 +30,11 @@ export function getDatabaseUrl(): string | null {
   return process.env.DATABASE_URL?.trim() || null;
 }
 
+/** The protected website, framed live by the workflow view. */
+export function getTargetUrl(): string {
+  return (process.env.TARGET_URL?.trim() || "http://localhost:8080").replace(/\/+$/, "");
+}
+
 export function getAgentUrl(): string {
   return (process.env.AGENT_URL?.trim() || DEFAULT_AGENT_URL).replace(/\/+$/, "");
 }
