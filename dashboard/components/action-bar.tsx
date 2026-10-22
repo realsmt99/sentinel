@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
-import { ArrowCounterClockwise, Broadcast, PlugsConnected, ShieldCheck } from "@phosphor-icons/react";
+import { Broadcast, PlugsConnected, Plus, ShieldCheck, SignOut } from "@phosphor-icons/react";
 import type { ActionControl, ActionControls } from "@/lib/actions";
 import type { ActionName } from "@/lib/types";
 import { toneText } from "./ui/tone";
@@ -13,7 +13,8 @@ const ACTION_ICON: Record<ActionName, ReactNode> = {
   connect: <PlugsConnected size={14} weight="bold" />,
   replay: <Broadcast size={14} weight="bold" />,
   restore: <ShieldCheck size={14} weight="bold" />,
-  reset: <ArrowCounterClockwise size={14} weight="bold" />,
+  reset: <SignOut size={14} weight="bold" />,
+  newrun: <Plus size={14} weight="bold" />,
 };
 
 interface ActionBarProps {

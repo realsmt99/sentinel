@@ -16,7 +16,7 @@ from typing import Any
 
 from agents import Runner, trace
 
-from . import db
+from . import db, narrate
 from .agents import containment as containment_agent
 from .agents import intel as intel_agent
 from .agents import remediation as remediation_agent
@@ -104,6 +104,7 @@ async def handle_feed_done() -> None:
     )
     candidates = await _db(db.cve_rows_with_status, CANDIDATE)
     matched = await _db(db.matched_by_component)
+    await _db(narrate.feed_checked, funnel, matched)
     if not matched:
         await _log("Orchestrator: no CVE matches the inventory, nothing to act on")
 
@@ -169,6 +170,7 @@ async def run_triage(candidates: list[dict]) -> None:
     top = ", ".join(f"{p} ({n})" for p, n in Counter(i["product"] for i in items if i["status"] == DISMISSED).most_common(3))
     await _log(f"Triage: {dismissed} of {len(items)} keyword-only CVEs dismissed as application-level flaws "
                f"(e.g. {top}); {escalated} escalated", "success", agent="triage")
+    await _db(narrate.triage_done, dismissed, len(items), top)
 
 
 # --- one advisory --------------------------------------------------------------------------------
@@ -189,6 +191,8 @@ async def handle_advisory(component: str, cve_ids: list[str]) -> None:
     async with (keenable_session() if live else nullcontext()) as keenable:
         with trace(f"Guard {component} {' '.join(cve_ids)}", metadata={"component": component}):
             run.intel = await run_intel(run, keenable)
+            intel_lane = await _db(db.get_lane, component, "threat_intel", None)
+            await _db(narrate.intel_found, run.intel, bool(intel_lane and intel_lane.get("status") == "cached"))
             run.facts = await _db(risk.load_facts, component, run.intel)
             run.slug = remediation_agent.advisory_slug(run.intel, component, cve_ids)
 
@@ -196,9 +200,11 @@ async def handle_advisory(component: str, cve_ids: list[str]) -> None:
             await _gather(*(run_scoring(run, s) for s in services))
 
             incidents = {i["service"]: i for i in await _db(db.incidents_for, component)}
+            await _db(narrate.ranked, list(incidents.values()))
             offline = [s for s in services if (incidents.get(s["name"]) or {}).get("band") == TAKE_OFFLINE]
             fixes = [s for s in services if (incidents.get(s["name"]) or {}).get("band") in FIX_BANDS]
             for service in offline:
+                await _db(narrate.shutting_down, service["name"], incidents[service["name"]]["danger_score"])
                 await _db(db.lane_idle, component, "containment", service["name"])
             for service in fixes:
                 await _db(db.lane_idle, component, "remediation", service["name"])
@@ -380,6 +386,7 @@ async def run_containment(run: AdvisoryContext, service: dict[str, Any]) -> None
     edge = f", {settings.target_url} returns {output['edge_status']}" if output["edge_status"] else ""
     await _log(f"{label}: {name} is {'offline' if offline else 'STILL ONLINE'} (maintenance page, container stopped{edge})",
                "success" if offline else "error", **lane_kw)
+    await _db(narrate.contained, name, offline, alert_sent, output["edge_status"])
 
 
 async def run_remediation(run: AdvisoryContext, service: dict[str, Any], keenable: Any) -> None:
@@ -426,6 +433,7 @@ async def run_remediation(run: AdvisoryContext, service: dict[str, Any], keenabl
     if incident["band"] != TAKE_OFFLINE and current and current["status"] == "HEALTHY" and result.target_version:
         await _db(db.update_service, name, status="PATCH_PENDING")
 
+    alerted = False
     if incident["band"] == PR_ONLY:
         alert_title = f"Guard: fix PR for {name} ({run.short_name})"
         alert_message = (
@@ -435,7 +443,8 @@ async def run_remediation(run: AdvisoryContext, service: dict[str, Any], keenabl
         await _db(db.lane, *lane, last_tool=f'send_alert("{alert_title}")')
         await _log(f'{label} -> send_alert("{alert_title}") (code)', **lane_kw)
         sent = await _db(notify.send_alert, alert_title, alert_message, "default", pr_url or settings.dashboard_url, ["wrench"])
-        if not sent.get("sent"):
+        alerted = bool(sent.get("sent"))
+        if not alerted:
             await _log(f"{label}: phone alert {sent.get('reason') or sent.get('error')}", "warn", **lane_kw)
 
     await _db(db.lane_finish, *lane, status=status, output=remediation, error=error)
@@ -443,6 +452,7 @@ async def run_remediation(run: AdvisoryContext, service: dict[str, Any], keenabl
     verified = "Docker tag verified" if result.docker_tag_verified else "Docker tag NOT verified"
     await _log(f"{label}: PHP {result.target_version or '?'} ({verified}), {', '.join(result.files_changed) or 'no files'}: {outcome}",
                "success" if pr_url or skipped else "warn", **lane_kw)
+    await _db(narrate.fix_ready, name, pr_url, result.target_version, skipped or result.notes, alerted)
 
 
 async def verify_postconditions(run: AdvisoryContext, offline: list[dict], fixes: list[dict]) -> None:
@@ -475,3 +485,7 @@ async def log_summary(run: AdvisoryContext, started: float) -> None:
                      + (f" ({', '.join(notes)})" if notes else ""))
     await _log(f"Guard: {run.short_name} handled in {time.monotonic() - started:.0f}s: " + "; ".join(parts),
                "success", component=run.component)
+    incidents = await _db(db.incidents_for, run.component)
+    await _db(narrate.waiting,
+              [i["service"] for i in incidents if i.get("band") == TAKE_OFFLINE and i.get("status") != "RESOLVED"],
+              [i["pr_url"] for i in incidents if i.get("pr_url")])

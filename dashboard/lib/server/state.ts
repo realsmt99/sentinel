@@ -73,6 +73,16 @@ SELECT
                JOIN services s ON s.id = inc.service_id ) i
   ) AS incidents,
 
+  ( SELECT row_to_json(r)
+      FROM ( SELECT id, title, status, outcome, started_at FROM runs
+              WHERE status = 'live' ORDER BY started_at DESC LIMIT 1 ) r
+  ) AS run,
+
+  ( SELECT coalesce(json_agg(m ORDER BY m.id), '[]')
+      FROM ( SELECT id, run_id, role, text, card, ts FROM chat_messages
+              WHERE run_id = ( SELECT id FROM runs WHERE status = 'live' ORDER BY started_at DESC LIMIT 1 ) ) m
+  ) AS chat,
+
   ( SELECT coalesce(json_agg(a ORDER BY a.id), '[]')
       FROM ( SELECT id, component, agent, service, level, message, ts
                FROM agent_log
@@ -99,6 +109,8 @@ interface StateRow {
   incidents: DashboardState["incidents"];
   threat_intel: DashboardState["threatIntel"];
   alerts: DashboardState["alerts"];
+  run: DashboardState["run"];
+  chat: DashboardState["chat"];
 }
 
 const SCHEMA_ERROR_CODES = new Set(["42P01", "42703", "42883"]); // undefined table / column / function
@@ -153,6 +165,8 @@ export async function readDashboardState(): Promise<DashboardState | StateError>
       threatIntel: row.threat_intel,
       alerts: row.alerts,
       targetUrl: getTargetUrl(),
+      chat: row.chat,
+      run: row.run,
     };
   } catch (err) {
     const code = errorCode(err);

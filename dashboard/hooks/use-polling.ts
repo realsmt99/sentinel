@@ -28,7 +28,13 @@ export function usePolling<T>(url: string, intervalMs: number, isGood: (body: T)
   useEffect(() => {
     let stopped = false;
     let timer: ReturnType<typeof setTimeout> | undefined;
-    let inflight: AbortController | null = null;
+    // Superseded requests are marked stale and their answers dropped, instead of aborted: in Next's dev
+    // build an aborted fetch surfaces as an unhandled rejection.
+    let inflight: { stale: boolean } | null = null;
+    const dropInflight = () => {
+      if (inflight) inflight.stale = true;
+      inflight = null;
+    };
 
     const schedule = () => {
       clearTimeout(timer);
@@ -37,13 +43,14 @@ export function usePolling<T>(url: string, intervalMs: number, isGood: (body: T)
 
     async function tick() {
       clearTimeout(timer);
-      inflight?.abort();
-      const controller = new AbortController();
-      inflight = controller;
+      dropInflight();
+      const request = { stale: false };
+      inflight = request;
 
       try {
-        const res = await fetch(url, { cache: "no-store", signal: controller.signal });
+        const res = await fetch(url, { cache: "no-store" });
         const body = (await res.json()) as T;
+        if (request.stale || stopped) return;
         const now = Date.now();
         const good = isGood(body);
         setPoll((prev) => ({
@@ -54,13 +61,13 @@ export function usePolling<T>(url: string, intervalMs: number, isGood: (body: T)
           checkedAt: now,
         }));
       } catch (err) {
-        if (controller.signal.aborted) return;
+        if (request.stale || stopped) return;
         const now = Date.now();
         const message = err instanceof Error ? err.message : String(err);
         setPoll((prev) => ({ ...prev, error: message, checkedAt: now }));
       }
 
-      if (inflight === controller) {
+      if (inflight === request) {
         inflight = null;
         schedule();
       }
@@ -71,7 +78,7 @@ export function usePolling<T>(url: string, intervalMs: number, isGood: (body: T)
         void tick();
       } else {
         clearTimeout(timer);
-        inflight?.abort();
+        dropInflight();
       }
     };
 
@@ -82,7 +89,7 @@ export function usePolling<T>(url: string, intervalMs: number, isGood: (body: T)
     return () => {
       stopped = true;
       clearTimeout(timer);
-      inflight?.abort();
+      dropInflight();
       document.removeEventListener("visibilitychange", onVisibilityChange);
       refreshRef.current = () => undefined;
     };

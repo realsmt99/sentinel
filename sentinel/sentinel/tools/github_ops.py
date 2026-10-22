@@ -9,7 +9,7 @@ import posixpath
 import re
 from typing import Any
 
-from ..config import REPO_ROOT, get_settings
+from ..config import FIXTURES_DIR, REPO_ROOT, get_settings
 
 log = logging.getLogger("sentinel.github")
 
@@ -225,6 +225,55 @@ def open_fix_pr(
             pass
     return {"ok": True, "pr_url": pr.html_url, "number": pr.number, "branch": branch,
             "files_changed": files, "reused": existing is not None}
+
+
+BASELINE_DIR = FIXTURES_DIR / "baseline"
+
+
+def restore_baseline() -> dict[str, Any]:
+    """Demo reset: put the target files on the default branch back to the vulnerable baseline in one commit,
+    so a merged fix PR does not stop the next run from opening its own PR. Commits only when files differ."""
+    if not get_settings().github_enabled:
+        return {"skipped": True, "reason": NOT_CONFIGURED}
+    from github import GithubException, InputGitTreeElement
+
+    repo = _repo()
+    ref = repo.get_git_ref(f"heads/{repo.default_branch}")
+    head = repo.get_git_commit(ref.object.sha)
+    changed = []
+    for path in sorted(p for p in BASELINE_DIR.rglob("*") if p.is_file()):
+        rel = path.relative_to(BASELINE_DIR).as_posix()
+        wanted = path.read_text()
+        try:
+            current = repo.get_contents(rel, ref=head.sha).decoded_content.decode("utf-8")
+        except GithubException as exc:
+            if exc.status != 404:
+                raise
+            current = None
+        if current != wanted:
+            changed.append((rel, wanted))
+    if not changed:
+        return {"restored": []}
+    tree = repo.create_git_tree(
+        [InputGitTreeElement(path=rel, mode="100644", type="blob", content=content) for rel, content in changed],
+        base_tree=head.tree,
+    )
+    commit = repo.create_git_commit("Guard demo reset: restore the vulnerable baseline", tree, [head])
+    ref.edit(commit.sha)
+    return {"restored": [rel for rel, _ in changed], "commit": commit.sha[:7]}
+
+
+def pr_merge_state(pr_url: str) -> dict[str, Any] | None:
+    """Merged state of one of Guard's PRs in the configured repo, or None if it is not one of ours."""
+    match = re.search(r"github\.com/([^/]+/[^/]+)/pull/(\d+)", pr_url or "")
+    if not match or not get_settings().github_enabled:
+        return None
+    repo = _repo()
+    if match.group(1).lower() != repo.full_name.lower():
+        return None
+    pr = repo.get_pull(int(match.group(2)))
+    return {"number": pr.number, "merged": bool(pr.merged), "by": pr.merged_by.login if pr.merged_by else None,
+            "state": pr.state}
 
 
 def close_sentinel_prs() -> dict[str, Any]:

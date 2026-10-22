@@ -16,9 +16,9 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from . import connection, db, feed, scanner
+from . import connection, db, feed, history, narrate, scanner
 from .config import get_settings
-from .reset import reset_demo
+from .reset import new_run, reset_demo
 from .runtime import Runtime
 from .tools import docker_ops
 
@@ -127,15 +127,21 @@ def create_app(runtime: Runtime) -> FastAPI:
         applied = connection.apply(body.model_dump()) if body else {"changed": [], "restart_required": False}
         if applied["restart_required"]:
             raise ApiError(409, "the new database is saved in .env: restart Guard (backend and dashboard) to use it")
+        if not history.current_run():
+            history.start_run()
+        narrate.user("Connect my project")
         try:
             with runtime.scan_lock:
                 services = scanner.scan()
         except docker_ops.DockerError as exc:
+            narrate.say(f"I could not reach Docker: {exc}")
             raise ApiError(503, f"Docker: {exc}") from exc
         if not services:
+            narrate.say("I found no containers with Guard labels. Is the project running?")
             raise ApiError(404, "no containers with sentinel.* labels found: is the project running?")
         if applied["changed"]:
             db.log_line(f"Connect: project settings updated ({', '.join(applied['changed'])})", "success")
+        narrate.connected(services)
         return {
             "ok": True,
             "count": len(services),
@@ -151,6 +157,7 @@ def create_app(runtime: Runtime) -> FastAPI:
             raise ApiError(409, "no system connected: POST /connect first")
         if db.cve_count() > 0:
             raise ApiError(409, "the feed was already replayed: POST /demo/reset first")
+        narrate.user("Replay the NVD feed of 21 October 2026")
         runtime.submit("replay", runtime.replay_job)
         return {"ok": True, "started": "replay", "cves": _feed_size(), "chunk_size": settings.replay_chunk_size}
 
@@ -166,8 +173,21 @@ def create_app(runtime: Runtime) -> FastAPI:
         except docker_ops.DockerError as exc:
             raise ApiError(400, f"no patched image {image} for {service}") from exc
         queued_behind = runtime.current
+        narrate.user(f"Approve the restore of {service}")
         runtime.submit(f"restore:{service}", lambda: docker_ops.restore(service))
         return {"ok": True, "started": "restore", "service": service, "image": image, "queued_behind": queued_behind}
+
+    @app.post("/demo/new-run")
+    def new_run_endpoint(wait: bool = False) -> dict[str, Any]:
+        require_db()
+        refuse_while("reset")
+        if db.services_count() == 0:
+            raise ApiError(409, "no system connected: connect a project first")
+        queued_behind = runtime.current
+        job = runtime.submit("reset", new_run)
+        if wait:
+            return {"ok": True, **job.wait(timeout=300)}
+        return {"ok": True, "started": "new-run", "queued_behind": queued_behind}
 
     @app.post("/demo/reset")
     def reset(wait: bool = False, clear_intel: bool = False) -> dict[str, Any]:

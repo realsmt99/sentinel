@@ -9,7 +9,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from . import db
+from . import db, narrate
 from .config import NVD_FIXTURE, get_settings
 
 _CVSS_KEYS = (("cvssMetricV40", "4.0"), ("cvssMetricV31", "3.1"), ("cvssMetricV30", "3.0"), ("cvssMetricV2", "2.0"))
@@ -60,6 +60,7 @@ def replay(after_chunk: Callable[[], None] | None = None) -> dict[str, int]:
     rows = load_fixture()
     size = max(1, settings.replay_chunk_size)
     db.log_line(f"Feed: replaying the NVD feed of 21 Oct 2026, {len(rows)} CVEs in chunks of {size}")
+    narrate.feed_started(len(rows))
     inserted = 0
     for start in range(0, len(rows), size):
         with db.connection() as conn:

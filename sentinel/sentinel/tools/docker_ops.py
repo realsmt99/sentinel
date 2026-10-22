@@ -136,9 +136,10 @@ def take_offline(service_name: str, component: str) -> dict[str, Any]:
     return result
 
 
-def restore(service_name: str) -> dict[str, Any]:
-    """Human-approved restore: recreate the service from its patched image, verify the runtime version,
-    drop the kill switch, health-check, mark HEALTHY and resolve the incident."""
+def restore(service_name: str, reason: str = "approved by a human") -> dict[str, Any]:
+    """Restore after human approval or a merged fix PR: recreate the service from its patched image, verify
+    the runtime version, drop the kill switch, health-check, mark HEALTHY and resolve the incident."""
+    from .. import narrate
     from ..tools.risk import load_facts
     from ..scoring import assess_version
 
@@ -156,7 +157,7 @@ def restore(service_name: str) -> dict[str, Any]:
     started = time.monotonic()
     previous_status = service["status"]
     db.update_service(service_name, status="RESTORING")
-    db.log_line(f"Restore approved by a human: recreating {service_name} from {image}", component=incident and incident["component"])
+    db.log_line(f"Restore {reason}: recreating {service_name} from {image}", component=incident and incident["component"])
     try:
         compose("up", "-d", "--no-build", service_name, env={**VULNERABLE_IMAGES, env_var: image})
         if not wait_for(lambda: container_running(service["container_name"]), timeout=30):
@@ -186,6 +187,7 @@ def restore(service_name: str) -> dict[str, Any]:
         fallback_status = "OFFLINE" if flag_path(service_name).exists() or previous_status == "OFFLINE" else previous_status
         db.update_service(service_name, status=fallback_status)
         db.log_line(f"Restore of {service_name} failed: {exc}", "error", component=incident and incident["component"])
+        narrate.restore_failed(service_name, str(exc))
         raise
 
     db.update_service(service_name, status="HEALTHY", runtime_version=version, image=image)
@@ -201,6 +203,12 @@ def restore(service_name: str) -> dict[str, Any]:
         "success",
         component=incident and incident["component"],
     )
+    since_cve = None
+    if incident:
+        first = db.query_one("SELECT min(received_at) AS t FROM cve_events WHERE cve_id = ANY(%s)", (incident["cve_ids"],))
+        if first and first["t"]:
+            since_cve = (db.now() - first["t"]).total_seconds()
+    narrate.solved(service_name, version, since_cve)
     return {"service": service_name, "version": version, "image": image, "http_status": status_code,
             "seconds": round(time.monotonic() - started, 1), **resolved}
 

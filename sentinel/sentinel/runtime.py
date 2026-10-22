@@ -13,10 +13,13 @@ from typing import Any
 
 import psycopg
 
-from . import db, feed, orchestrator, scanner
+from . import db, feed, narrate, orchestrator, scanner
 from .config import get_settings
+from .tools import docker_ops, github_ops
 
 log = logging.getLogger("sentinel.runtime")
+
+MERGE_POLL_SECONDS = 10.0
 
 
 @dataclass
@@ -48,7 +51,7 @@ class Runtime:
 
     def start(self) -> None:
         for target, name in ((self.loop.run_forever, "loop"), (self._work, "worker"),
-                             (self._listen, "listen"), (self._rescan, "rescan")):
+                             (self._listen, "listen"), (self._rescan, "rescan"), (self._watch_merges, "merges")):
             threading.Thread(target=target, name=f"sentinel-{name}", daemon=True).start()
 
     def stop(self) -> None:
@@ -145,6 +148,36 @@ class Runtime:
                 log.exception("stage 1 failed for batch %s", payload)
         elif channel == "feed_done" and not self.busy_with("advisory"):
             self.submit("advisory", self.advisory_job)
+
+    # --- merged fix PRs: deploy the patched service --------------------------------------------------
+
+    def _watch_merges(self) -> None:
+        handled: set[str] = set()
+        while not self._stop.wait(MERGE_POLL_SECONDS):
+            settings = get_settings()
+            if not (settings.github_enabled and settings.database_url) or self.busy_with("reset"):
+                continue
+            try:
+                rows = db.query("SELECT i.pr_url, s.name AS service FROM incidents i JOIN services s ON s.id = i.service_id "
+                                "WHERE i.pr_url IS NOT NULL AND i.status <> 'RESOLVED'")
+                for row in rows:
+                    if row["pr_url"] in handled or self.busy_with(f"restore:{row['service']}"):
+                        continue
+                    state = github_ops.pr_merge_state(row["pr_url"])
+                    if state and state["merged"]:
+                        handled.add(row["pr_url"])
+                        self.submit(f"restore:{row['service']}",
+                                    lambda service=row["service"], st=state: self._deploy_merge(service, st))
+            except Exception as exc:
+                log.debug("merge watcher: %s", exc)
+
+    def _deploy_merge(self, service: str, state: dict[str, Any]) -> Any:
+        narrate.merged(service, state["number"], state.get("by"))
+        try:
+            return docker_ops.restore(service, reason=f"after PR #{state['number']} was merged")
+        except ValueError as exc:
+            narrate.restore_failed(service, str(exc))
+            raise
 
     # --- periodic re-scan (only once a system is connected) ---------------------------------------
 

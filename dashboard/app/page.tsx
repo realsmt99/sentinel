@@ -1,5 +1,5 @@
-import { Stage } from "@/components/stage/stage";
+import { Chat } from "@/components/chat/chat";
 
 export default function Home() {
-  return <Stage />;
+  return <Chat />;
 }

@@ -2,6 +2,8 @@ import path from "node:path";
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Keeps the dev badge out of screen recordings of the demo.
+  devIndicators: false,
   cacheComponents: true,
   partialPrefetching: true,
   turbopack: {

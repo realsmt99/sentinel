@@ -17,6 +17,8 @@ function agentPath(action: ActionName, service: string | null): string {
       return "/demo/replay";
     case "reset":
       return "/demo/reset";
+    case "newrun":
+      return "/demo/new-run";
     case "restore":
       return `/restore/${encodeURIComponent(service ?? "")}`;
   }

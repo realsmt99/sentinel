@@ -401,7 +401,7 @@ def update_incident(incident_id: int, **fields: Any) -> None:
 
 
 def reset_tables(*, clear_services: bool = True, clear_intel: bool = False) -> None:
-    tables = ["cve_events", "incidents", "agent_runs", "agent_log"]
+    tables = ["cve_events", "incidents", "agent_runs", "agent_log", "chat_messages"]
     if clear_services:
         tables.append("services")
     if clear_intel:

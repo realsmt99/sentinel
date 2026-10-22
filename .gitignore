@@ -2,6 +2,9 @@
 .env.*
 !.env.example
 
+# Local run history written by the Guard backend (sentinel/sentinel/history.py)
+history/
+
 node_modules/
 .next/
 __pycache__/

@@ -109,6 +109,56 @@ export interface ThreatIntelRow {
   fetched_at: string;
 }
 
+/** A card attached to a Guard message; rendered from the run state. */
+export interface ChatCard {
+  type: "services" | "feed" | "funnel" | "intel" | "scores" | "site" | "pr" | "next" | string;
+  service?: string;
+  url?: string;
+}
+
+export interface ChatMessage {
+  id: number;
+  run_id: string;
+  role: "guard" | "user" | "event";
+  text: string;
+  card: ChatCard | null;
+  ts: string;
+}
+
+export interface RunInfo {
+  id: string;
+  title: string;
+  status: "live" | "archived";
+  outcome: string | null;
+  started_at: string;
+}
+
+/** One history/<id>.json file, as listed in the sidebar. */
+export interface HistoryEntry {
+  id: string;
+  title: string;
+  status: string;
+  outcome: string;
+  startedAt: string;
+  endedAt: string | null;
+  updatedAt: string;
+  summary: {
+    services: string[];
+    cves: number;
+    matched: number;
+    topService: string | null;
+    topScore: number | null;
+    prs: string[];
+    messages: number;
+  };
+}
+
+/** A whole history file: the entry plus the run state as it was at its last milestone. */
+export interface HistoryDoc extends HistoryEntry {
+  endReason: string | null;
+  state: Omit<DashboardState, "ok" | "run">;
+}
+
 export interface DashboardState {
   ok: true;
   /** Database clock at query time, used to compute elapsed times against DB timestamps. */
@@ -128,6 +178,10 @@ export interface DashboardState {
   alerts: LogLine[];
   /** URL of the protected website (TARGET_URL). */
   targetUrl: string;
+  /** Guard's narration of the live run, oldest first. */
+  chat: ChatMessage[];
+  /** The live run (null before the first Connect). */
+  run: RunInfo | null;
 }
 
 export type StateErrorReason = "not_configured" | "unreachable" | "schema_missing" | "query_failed";
@@ -160,7 +214,7 @@ export type HealthResponse =
   | { reachable: true; agentUrl: string; checks: Record<string, HealthValue> }
   | { reachable: false; agentUrl: string; error: string };
 
-export const ACTION_NAMES = ["connect", "replay", "restore", "reset"] as const;
+export const ACTION_NAMES = ["connect", "replay", "restore", "reset", "newrun"] as const;
 export type ActionName = (typeof ACTION_NAMES)[number];
 
 export type ActionResponse = ({ ok: true } & Record<string, unknown>) | { ok: false; error: string };

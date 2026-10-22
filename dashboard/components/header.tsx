@@ -22,7 +22,7 @@ export function Header({ live, health }: HeaderProps) {
           {live.label}
         </Badge>
         <Link
-          href="/"
+          href="/stage"
           className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs text-zinc-400 ring-1 ring-inset ring-white/10 transition-colors duration-300 hover:bg-white/5 hover:text-zinc-100"
         >
           <ListNumbers size={13} />

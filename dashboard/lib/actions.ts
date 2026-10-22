@@ -42,6 +42,7 @@ export interface ActionControls {
   replay: ActionControl;
   restore: ActionControl;
   reset: ActionControl;
+  newRun: ActionControl;
   /** Restore control per service name, for services that are offline or restoring. */
   restoreByService: Record<string, ActionControl>;
 }
@@ -51,6 +52,7 @@ const WAIT_TIMEOUT_MS: Record<ActionName, number> = {
   replay: 20_000,
   restore: 90_000,
   reset: 30_000,
+  newrun: 30_000,
 };
 const MESSAGE_TTL_MS = 10_000;
 
@@ -73,6 +75,8 @@ function effectVisible(name: ActionName, service: string | null, state: Dashboar
         state.agentRuns.length === 0 &&
         state.services.every((s) => s.status === "HEALTHY")
       );
+    case "newrun":
+      return state.funnel.total === 0 && state.incidents.length === 0 && state.services.length > 0;
   }
 }
 
@@ -85,7 +89,9 @@ function waitingText(button: ActionButton): string {
     case "restore":
       return `Restoring ${button.service} on the patched image...`;
     case "reset":
-      return "Resetting the demo...";
+      return "Disconnecting: saving this run to history and resetting...";
+    case "newrun":
+      return "Saving this run to history and starting a new one...";
   }
 }
 
@@ -181,14 +187,25 @@ function buildButtons(state: DashboardState, dbNowMs: number) {
     key: actionKey("reset"),
     name: "reset",
     service: null,
-    label: "Reset demo",
-    busyLabel: "Resetting...",
-    confirmLabel: "Click again to reset",
+    label: "Disconnect",
+    busyLabel: "Disconnecting...",
+    confirmLabel: "Click again to disconnect",
     enabled: true,
     emphasis: false,
-    hint: "Clears the feed, incidents, agent runs and discovered services; keeps the intel cache",
+    hint: "Saves this run to history, resets the demo and goes back to the connect form",
   };
-  return { connect, replay, restore: restoreButton(restoreTarget), reset };
+  const newRun: ActionButton = {
+    key: actionKey("newrun"),
+    name: "newrun",
+    service: null,
+    label: "New run",
+    busyLabel: "Starting...",
+    confirmLabel: null,
+    enabled: connected,
+    emphasis: false,
+    hint: "Saves this run to history and starts again, still connected",
+  };
+  return { connect, replay, restore: restoreButton(restoreTarget), reset, newRun };
 }
 
 export function buildActionControls(
@@ -231,6 +248,7 @@ export function buildActionControls(
     replay: toControl(buttons.replay),
     restore: toControl(buttons.restore),
     reset: toControl(buttons.reset),
+    newRun: toControl(buttons.newRun),
     restoreByService,
   };
 }

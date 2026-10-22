@@ -46,6 +46,8 @@ interface SceneCopy {
   summary: string;
   activity?: string;
   cta?: ReactNode;
+  /** The step waits for the presenter (a button in the copy or in the visual). */
+  human?: boolean;
 }
 
 const card = "rounded-xl border border-line bg-white";
@@ -72,6 +74,7 @@ export function sceneCopy(key: SceneKey, ctx: SceneContext): SceneCopy {
           steps.connect === "done"
             ? `Guard found ${view.services.length} running services from their Docker labels and checked what each container really runs. The inventory is now stored in Aiven.`
             : "Guard works with any project: point it at your Aiven database, GitHub repository, Docker project, website and phone. Test each connection, then connect.",
+        human: steps.connect !== "done",
       };
     case "feed":
       return {

@@ -189,7 +189,7 @@ function StageBody({ snapshot, site, controls, dbNowMs, onRun, connectWith, live
               <span className="font-mono">
                 {scene.key === "summary" ? "Summary" : `Step ${String(shown + 1).padStart(2, "0")} / 08`}
               </span>
-              <StatusTag status={status} needsHuman={copy.cta !== undefined} />
+              <StatusTag status={status} needsHuman={copy.human ?? copy.cta !== undefined} />
             </div>
             <h1 className="mt-5 font-serif text-5xl leading-[1.05] tracking-[-0.02em] text-ink md:text-6xl">{copy.headline}</h1>
             <p className="mt-5 max-w-[46ch] text-[15px] leading-[1.7] text-ink-soft">{copy.summary}</p>
