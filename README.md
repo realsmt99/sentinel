@@ -16,6 +16,10 @@ You press one button. Everything else is automatic. In the run below, it took un
 
 ![Website taken offline](docs/screenshots/2-offline.png)
 
+At the same moment, your phone gets the alert (via [ntfy](https://ntfy.sh)):
+
+<img src="docs/screenshots/6-phone-alert.png" alt="Phone alert: Guard took the shop offline" width="480">
+
 **3. Fix PRs are opened.** One per affected service, linked on the page. The header says what Guard is waiting for: your merge.
 
 ![Fix pull requests](docs/screenshots/3-pull-requests.png)
@@ -27,6 +31,16 @@ You press one button. Everything else is automatic. In the run below, it took un
 **5. Back online.** Merge the PR (Guard redeploys automatically) or press **Bring the app back online**. Guard starts the patched version, checks it really runs PHP 8.3.36, and removes the maintenance page.
 
 ![Back online and patched](docs/screenshots/5-back-online.png)
+
+### The other two outcomes, in the same run
+
+Guard does not treat every service the same way. The same CVE led to three different decisions:
+
+| Service | Score | What Guard did |
+| --- | --- | --- |
+| **shop** (public, PHP 8.3.30, mod_php) | 92 | Taken offline now, fix PR, urgent phone alert (the case above) |
+| **admin-panel** (internal, PHP 8.4.20) | 67 | **Keeps running.** It is vulnerable but internal, so Guard opens a fix PR (bump to PHP 8.4.27) and sends a normal alert instead of taking it down. It is marked "Patch pending" until the PR is merged. |
+| **billing-worker** (internal, Python 3.12) | 0 | **Nothing to do.** It does not run PHP, so the CVE cannot affect it: no PR, no alert, no downtime. A keyword script would have paged you for it anyway. |
 
 The dashboard is read-only: apart from Connect, the only things you can do are open the PRs and bring the app back. **Disconnect** (top right) saves the run and resets the demo. The older step-by-step chat view is still at `/chat`.
 
